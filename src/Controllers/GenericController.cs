@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using MockApiJsonServer.Helpers;
@@ -23,7 +24,6 @@ namespace MockApiJsonServer.Controllers
     public IActionResult Get()
     {
       return GetResponseFromFile();
-
     }
 
     [HttpPost]
@@ -34,6 +34,12 @@ namespace MockApiJsonServer.Controllers
 
     [HttpPut]
     public IActionResult Put()
+    {
+      return GetResponseFromFile();
+    }
+
+    [HttpDelete]
+    public IActionResult Delete()
     {
       return GetResponseFromFile();
     }
@@ -60,7 +66,6 @@ namespace MockApiJsonServer.Controllers
     {
       string path = Request.Path;
       var method = Request.Method;
-
       path.ReplaceDoubleSlashes();
 
       if (path == "/")

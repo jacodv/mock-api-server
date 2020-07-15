@@ -20,6 +20,7 @@ namespace MockApiJsonServer
     public void ConfigureServices(IServiceCollection services)
     {
       services.AddControllers();
+      services.AddCors();
       services.AddMvcCore().AddNewtonsoftJson();
       services.AddScoped<IFileService, FileService>();
     }
@@ -31,6 +32,7 @@ namespace MockApiJsonServer
       {
         app.UseDeveloperExceptionPage();
       }
+      UseCorsPolicy(app);
 
       app.UseHttpsRedirection();
 
@@ -41,6 +43,21 @@ namespace MockApiJsonServer
       app.UseEndpoints(endpoints =>
       {
         endpoints.MapControllers();
+      });
+
+    }
+    private static void UseCorsPolicy(IApplicationBuilder app)
+    {
+      app.UseCors(policy =>
+      {
+
+        policy.WithOrigins("http://localhost").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
+        policy.WithOrigins("http://localhost:5001").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
+        policy.WithOrigins("http://localhost:5000").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
+        policy.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
+        policy.WithOrigins("http://localhost:3000/").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
+        policy.WithOrigins("http://localhost:3000/api").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
+        policy.Build();
       });
     }
   }
