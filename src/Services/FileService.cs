@@ -2,16 +2,22 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
-namespace MockApiJsonServer.Services
+namespace MockApiServer.Services
 {
   public class FileService : IFileService
   {
-    public FileService(IConfiguration configuration)
+    private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _env;
+
+    public FileService(IConfiguration configuration, IWebHostEnvironment env)
     {
-      LoadFiles(configuration);
+      _configuration = configuration;
+      _env = env;
+      LoadFiles();
     }
     private FileInfo[] Files { get; set; }
 
@@ -24,23 +30,23 @@ namespace MockApiJsonServer.Services
       return JsonConvert.DeserializeObject(json);
     }
 
-    public string GetHomeScreen(string webRootPath)
+    public string GetHomeScreen()
     {
-      if (string.IsNullOrEmpty(webRootPath))
-        return File.ReadAllText(Path.Combine(Assembly.GetExecutingAssembly().Location, "index.html"));
-      return File.ReadAllText(Path.Combine(webRootPath, "index.html"));
+      return File.ReadAllText(string.IsNullOrEmpty(_env.WebRootPath) ? 
+        Path.Combine(Assembly.GetExecutingAssembly().Location, "index.html") : 
+        Path.Combine(_env.WebRootPath, "index.html"));
     }
 
-    private void LoadFiles(IConfiguration configuration)
+    private void LoadFiles()
     {
-      var workingFolder = configuration.GetValue<string>("DataFolder") ?? configuration.GetValue<string>("WorkingDirectory");
+      var workingFolder = _configuration.GetValue<string>("DataFolder") ?? _configuration.GetValue<string>("WorkingDirectory");
 
       if (string.IsNullOrEmpty(workingFolder))
-        throw new ArgumentNullException(@"Data Folder", "No data directory specified. Please specify Data Directory");
+        throw new InvalidOperationException("No data directory specified. Please specify Data Directory");
 
       var directory = new DirectoryInfo(workingFolder);
       if(!directory.Exists)
-        throw new DirectoryNotFoundException("Could not find directory specified");
+        throw new DirectoryNotFoundException($"Could not find directory specified: {directory.FullName}");
       Files = directory.GetFiles();
     }
   }
@@ -48,6 +54,6 @@ namespace MockApiJsonServer.Services
   public interface IFileService
   {
     object ReadFile(string fileName);
-    string GetHomeScreen(string webRootPath);
+    string GetHomeScreen();
   }
 }

@@ -1,11 +1,10 @@
 ﻿using System.Text;
-using System.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using MockApiJsonServer.Helpers;
-using MockApiJsonServer.Services;
+using MockApiServer.Helpers;
+using MockApiServer.Services;
 
-namespace MockApiJsonServer.Controllers
+namespace MockApiServer.Controllers
 {
   [ApiController]
   [Route("{*url}")]
@@ -59,7 +58,7 @@ namespace MockApiJsonServer.Controllers
     private IActionResult HomeScreen()
     {
       var webRootPath = _webHostEnvironment.WebRootPath;
-      var homeScreen = _fileService.GetHomeScreen(webRootPath);
+      var homeScreen = _fileService.GetHomeScreen();
       return Content(homeScreen, "text/html", Encoding.UTF8);
     }
     private string GetResponseFile()
