@@ -8,28 +8,26 @@ using Newtonsoft.Json;
 
 namespace MockApiServer.Services
 {
-  public class FileService : IFileService
+  public class MockDataService : IMockDataService
   {
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _env;
 
-    public FileService(IConfiguration configuration, IWebHostEnvironment env)
+    public MockDataService(IConfiguration configuration, IWebHostEnvironment env)
     {
       _configuration = configuration;
       _env = env;
-      LoadFiles();
+      _validate();
     }
-    private FileInfo[] Files { get; set; }
 
-    public object ReadFile(string fileName)
+    public string ReadFile(string httpMethod, string url)
     {
-      var file = Files.FirstOrDefault(x => x.Name == fileName);
-      if (file == null)
-        return null;
-      var json = File.ReadAllText(file.FullName);
-      return JsonConvert.DeserializeObject(json);
+      var fileName = $"{httpMethod}_{_getFileNameFromUrl(url)}";
+      var filePath = _getFilePath(fileName);
+      if(!File.Exists(filePath))
+        throw new FileNotFoundException($"Mock data not found: {fileName}", fileName);
+      return File.ReadAllText(filePath);
     }
-
     public string GetHomeScreen()
     {
       return File.ReadAllText(string.IsNullOrEmpty(_env.WebRootPath) ? 
@@ -37,9 +35,9 @@ namespace MockApiServer.Services
         Path.Combine(_env.WebRootPath, "index.html"));
     }
 
-    private void LoadFiles()
+    private void _validate()
     {
-      var workingFolder = _configuration.GetValue<string>("DataFolder") ?? _configuration.GetValue<string>("WorkingDirectory");
+      var workingFolder = _getWorkingDirectory();
 
       if (string.IsNullOrEmpty(workingFolder))
         throw new InvalidOperationException("No data directory specified. Please specify Data Directory");
@@ -47,13 +45,26 @@ namespace MockApiServer.Services
       var directory = new DirectoryInfo(workingFolder);
       if(!directory.Exists)
         throw new DirectoryNotFoundException($"Could not find directory specified: {directory.FullName}");
-      Files = directory.GetFiles();
+    }
+    private string _getFilePath(string fileName)
+    {
+      return Path.Combine(_getWorkingDirectory(), fileName);
+    }
+    private string _getWorkingDirectory()
+    {
+      return Path.Combine(Environment.CurrentDirectory, _env.WebRootPath, "mockData");
+    }
+    private string _getFileNameFromUrl(string url)
+    {
+      if (url.StartsWith("/"))
+        url = url.Substring(1);
+      return $"{url.Replace('/', '_')}.json";
     }
   }
 
-  public interface IFileService
+  public interface IMockDataService
   {
-    object ReadFile(string fileName);
+    string ReadFile(string httpMethod, string url);
     string GetHomeScreen();
   }
 }

@@ -1,9 +1,12 @@
+using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using MockApiServer.Services;
+using Serilog;
 
 namespace MockApiServer
 {
@@ -22,22 +25,21 @@ namespace MockApiServer
       services.AddControllers();
       services.AddCors();
       services.AddMvcCore().AddNewtonsoftJson();
-      services.AddScoped<IFileService, FileService>();
+      services.AddScoped<IMockDataService, MockDataService>();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
     {
+      loggerFactory.AddSerilog();
       if (env.IsDevelopment())
       {
         app.UseDeveloperExceptionPage();
       }
+      
       UseCorsPolicy(app);
-
       app.UseHttpsRedirection();
-
       app.UseRouting();
-
       app.UseAuthorization();
 
       app.UseEndpoints(endpoints =>
@@ -48,6 +50,7 @@ namespace MockApiServer
     }
     private static void UseCorsPolicy(IApplicationBuilder app)
     {
+      //app.UseSerilogRequestLogging();
       app.UseCors(policy =>
       {
 
