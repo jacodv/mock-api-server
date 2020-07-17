@@ -1,6 +1,7 @@
 using System.IO;
 using System.Reflection;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -26,7 +27,9 @@ namespace MockApiServer
     {
       services.AddControllers();
       services.AddCors();
-      services.AddMvcCore().AddNewtonsoftJson();
+      services.AddMvcCore()
+        .AddNewtonsoftJson()
+        .AddFluentValidation();
       services.AddScoped<IMockDataService, MockDataService>();
       services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
     }

@@ -26,22 +26,22 @@ namespace MockApiServer.Services
 
     public async Task<string> ReadFile(string httpMethod, string url)
     {
-      var fileName = $"{httpMethod}_{_getFileNameFromUrl(url)}";
+      var fileName = _getFileNameFromUrl(httpMethod, url);
       var filePath = _getFilePath(fileName);
-      if(!File.Exists(filePath))
+      if (!File.Exists(filePath))
         throw new FileNotFoundException($"Mock data not found: {fileName}", fileName);
       return await File.ReadAllTextAsync(filePath);
     }
     public string GetHomeScreen()
     {
-      return File.ReadAllText(string.IsNullOrEmpty(_env.WebRootPath) ? 
-        Path.Combine(Assembly.GetExecutingAssembly().Location, "index.html") : 
+      return File.ReadAllText(string.IsNullOrEmpty(_env.WebRootPath) ?
+        Path.Combine(Assembly.GetExecutingAssembly().Location, "index.html") :
         Path.Combine(_env.WebRootPath, "index.html"));
     }
 
     public async Task WriteFile(ExpectedTestResult expectedResult)
     {
-      var fileName = _getFileNameFromUrl(expectedResult.RequestPath);
+      var fileName = _getFileNameFromUrl(expectedResult.HttpMethod, expectedResult.RequestPath);
 
       await File.WriteAllTextAsync(_getFilePath(fileName), JsonConvert.SerializeObject(expectedResult.ExpectedResult), CancellationToken.None);
     }
@@ -56,9 +56,11 @@ namespace MockApiServer.Services
 
     public Task DeleteFile(string method, string path)
     {
-      var filePath = _getFilePath(_getFileNameFromUrl(path));
-      if(File.Exists(filePath))
-        File.Delete(filePath);
+      var filePath = _getFilePath(_getFileNameFromUrl(method, path));
+      if (!File.Exists(filePath))
+        throw new FileNotFoundException();
+
+      File.Delete(filePath);
       return Task.CompletedTask;
     }
 
@@ -70,7 +72,7 @@ namespace MockApiServer.Services
         throw new InvalidOperationException("No data directory specified. Please specify Data Directory");
 
       var directory = new DirectoryInfo(workingFolder);
-      if(!directory.Exists)
+      if (!directory.Exists)
         throw new DirectoryNotFoundException($"Could not find directory specified: {directory.FullName}");
     }
     private string _getFilePath(string fileName)
@@ -81,11 +83,11 @@ namespace MockApiServer.Services
     {
       return Path.Combine(Environment.CurrentDirectory, _env.WebRootPath, "mockData");
     }
-    private string _getFileNameFromUrl(string url)
+    private string _getFileNameFromUrl(string httpMethod, string url)
     {
       if (url.StartsWith("/"))
         url = url.Substring(1);
-      return $"{url.ToLower().Replace('/', '_')}.json";
+      return $"{httpMethod.ToLower()}_{url.ToLower().Replace('/', '_')}.json";
     }
   }
 

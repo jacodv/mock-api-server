@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -30,9 +32,10 @@ namespace MockApiServer.Controllers
       return await _mockDataService.GetPersistedFileNames();
     }
 
-    [HttpGet("{method}/{path}")]
-    public Task<IActionResult> Get(string method, string path)
+    [HttpGet("{method}")]
+    public Task<IActionResult> Get(string method, [FromQuery]string path)
     {
+      _logger.LogDebug($"Method: ${method}, Path: {path}");
       return GetExpectedResult(method, path);
     }
 
@@ -49,10 +52,17 @@ namespace MockApiServer.Controllers
     }
 
 
-    [HttpDelete]
-    public async Task<IActionResult> Delete(string method, string path)
+    [HttpDelete("{method}")]
+    public async Task<IActionResult> Delete(string method, [FromQuery]string path)
     {
-      await _mockDataService.DeleteFile(method, path);
+      try
+      {
+        await _mockDataService.DeleteFile(method, path);
+      }
+      catch (FileNotFoundException)
+      {
+        return NotFound($"{method}?path={path}");
+      }
       return Ok();
     }
   }
