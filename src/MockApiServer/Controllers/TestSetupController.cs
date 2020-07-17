@@ -33,10 +33,10 @@ namespace MockApiServer.Controllers
     }
 
     [HttpGet("{method}")]
-    public Task<IActionResult> Get(string method, [FromQuery]string path)
+    public Task<IActionResult> Get(string method, [FromQuery]string path, [FromQuery] string queryString)
     {
       _logger.LogDebug($"Method: ${method}, Path: {path}");
-      return GetExpectedResult(method, path);
+      return GetExpectedResult(method, path, queryString);
     }
 
     [HttpPost]
@@ -53,11 +53,11 @@ namespace MockApiServer.Controllers
 
 
     [HttpDelete("{method}")]
-    public async Task<IActionResult> Delete(string method, [FromQuery]string path)
+    public async Task<IActionResult> Delete(string method, [FromQuery]string path, [FromQuery] string queryString)
     {
       try
       {
-        await _mockDataService.DeleteFile(method, path);
+        await _mockDataService.DeleteFile(method, path, queryString);
       }
       catch (FileNotFoundException)
       {

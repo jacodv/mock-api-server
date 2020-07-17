@@ -8,6 +8,7 @@ namespace MockApiServer.Models
     public string HttpMethod { get; set; }
     public string RequestPath { get; set; }
     public dynamic ExpectedResult { get; set; }
+    public string QueryString { get; set; }
   }
 
   public class ExpectedTestResultValidator : AbstractValidator<ExpectedTestResult>

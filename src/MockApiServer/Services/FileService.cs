@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -16,17 +18,19 @@ namespace MockApiServer.Services
   {
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _env;
+    private readonly MD5CryptoServiceProvider _md5CryptoServiceProvider;
 
     public MockDataService(IConfiguration configuration, IWebHostEnvironment env)
     {
       _configuration = configuration;
       _env = env;
       _validate();
+      _md5CryptoServiceProvider = new MD5CryptoServiceProvider();
     }
 
-    public async Task<string> ReadFile(string httpMethod, string url)
+    public async Task<string> ReadFile(string httpMethod, string url, string queryString = null)
     {
-      var fileName = _getFileNameFromUrl(httpMethod, url);
+      var fileName = _getFileNameFromUrl(httpMethod, url, queryString);
       var filePath = _getFilePath(fileName);
       if (!File.Exists(filePath))
         throw new FileNotFoundException($"Mock data not found: {fileName}", fileName);
@@ -41,8 +45,7 @@ namespace MockApiServer.Services
 
     public async Task WriteFile(ExpectedTestResult expectedResult)
     {
-      var fileName = _getFileNameFromUrl(expectedResult.HttpMethod, expectedResult.RequestPath);
-
+      var fileName = _getFileNameFromUrl(expectedResult.HttpMethod, expectedResult.RequestPath, expectedResult.QueryString);
       await File.WriteAllTextAsync(_getFilePath(fileName), JsonConvert.SerializeObject(expectedResult.ExpectedResult), CancellationToken.None);
     }
 
@@ -54,9 +57,9 @@ namespace MockApiServer.Services
         .Select(s => s.Name));
     }
 
-    public Task DeleteFile(string method, string path)
+    public Task DeleteFile(string method, string path, string queryString=null)
     {
-      var filePath = _getFilePath(_getFileNameFromUrl(method, path));
+      var filePath = _getFilePath(_getFileNameFromUrl(method, path, queryString));
       if (!File.Exists(filePath))
         throw new FileNotFoundException();
 
@@ -83,20 +86,30 @@ namespace MockApiServer.Services
     {
       return Path.Combine(Environment.CurrentDirectory, _env.WebRootPath, "mockData");
     }
-    private string _getFileNameFromUrl(string httpMethod, string url)
+    private string _getFileNameFromUrl(string httpMethod, string url, string queryString)
     {
       if (url.StartsWith("/"))
         url = url.Substring(1);
-      return $"{httpMethod.ToLower()}_{url.ToLower().Replace('/', '_')}.json";
+      
+      if (!string.IsNullOrEmpty(queryString) && queryString.StartsWith("?"))
+        queryString = queryString.Substring(1);
+      
+      var queryStringHash = !string.IsNullOrEmpty(queryString) ?
+          "_"+BitConverter
+            .ToString(_md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(queryString)))
+            .Replace("-", string.Empty)
+        : null;
+
+      return $"{httpMethod.ToLower()}_{url.ToLower().Replace('/', '_')}{queryStringHash}.json";
     }
   }
 
   public interface IMockDataService
   {
-    Task<string> ReadFile(string httpMethod, string url);
+    Task<string> ReadFile(string httpMethod, string url, string queryString=null);
     string GetHomeScreen();
     Task WriteFile(ExpectedTestResult expectedResult);
     Task<IEnumerable<string>> GetPersistedFileNames();
-    Task DeleteFile(string method, string path);
+    Task DeleteFile(string method, string path, string queryString=null);
   }
 }

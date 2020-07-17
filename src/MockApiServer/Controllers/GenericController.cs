@@ -44,7 +44,7 @@ namespace MockApiServer.Controllers
       if (path == "/")
         return HomeScreen();
 
-      return await GetExpectedResult(method, path);
+      return await GetExpectedResult(method, path, Request.QueryString.HasValue?Request.QueryString.Value:null);
     }
     private IActionResult HomeScreen()
     {
