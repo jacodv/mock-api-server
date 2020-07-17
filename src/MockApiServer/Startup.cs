@@ -1,4 +1,6 @@
 using System.IO;
+using System.Reflection;
+using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +28,7 @@ namespace MockApiServer
       services.AddCors();
       services.AddMvcCore().AddNewtonsoftJson();
       services.AddScoped<IMockDataService, MockDataService>();
+      services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -44,6 +47,9 @@ namespace MockApiServer
 
       app.UseEndpoints(endpoints =>
       {
+        endpoints.MapControllerRoute(
+          name:"TestSetup",
+          pattern:"api/{controller=TestSetup}/{*path}");
         endpoints.MapControllers();
       });
 

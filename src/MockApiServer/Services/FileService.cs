@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using MockApiServer.Models;
 using Newtonsoft.Json;
 
 namespace MockApiServer.Services
@@ -20,19 +24,42 @@ namespace MockApiServer.Services
       _validate();
     }
 
-    public string ReadFile(string httpMethod, string url)
+    public async Task<string> ReadFile(string httpMethod, string url)
     {
       var fileName = $"{httpMethod}_{_getFileNameFromUrl(url)}";
       var filePath = _getFilePath(fileName);
       if(!File.Exists(filePath))
         throw new FileNotFoundException($"Mock data not found: {fileName}", fileName);
-      return File.ReadAllText(filePath);
+      return await File.ReadAllTextAsync(filePath);
     }
     public string GetHomeScreen()
     {
       return File.ReadAllText(string.IsNullOrEmpty(_env.WebRootPath) ? 
         Path.Combine(Assembly.GetExecutingAssembly().Location, "index.html") : 
         Path.Combine(_env.WebRootPath, "index.html"));
+    }
+
+    public async Task WriteFile(ExpectedTestResult expectedResult)
+    {
+      var fileName = _getFileNameFromUrl(expectedResult.RequestPath);
+
+      await File.WriteAllTextAsync(_getFilePath(fileName), JsonConvert.SerializeObject(expectedResult.ExpectedResult), CancellationToken.None);
+    }
+
+    public Task<IEnumerable<string>> GetPersistedFileNames()
+    {
+      var workingDirectory = new DirectoryInfo(_getWorkingDirectory());
+      return Task.FromResult(workingDirectory
+        .GetFiles("*.json")
+        .Select(s => s.Name));
+    }
+
+    public Task DeleteFile(string method, string path)
+    {
+      var filePath = _getFilePath(_getFileNameFromUrl(path));
+      if(File.Exists(filePath))
+        File.Delete(filePath);
+      return Task.CompletedTask;
     }
 
     private void _validate()
@@ -58,13 +85,16 @@ namespace MockApiServer.Services
     {
       if (url.StartsWith("/"))
         url = url.Substring(1);
-      return $"{url.Replace('/', '_')}.json";
+      return $"{url.ToLower().Replace('/', '_')}.json";
     }
   }
 
   public interface IMockDataService
   {
-    string ReadFile(string httpMethod, string url);
+    Task<string> ReadFile(string httpMethod, string url);
     string GetHomeScreen();
+    Task WriteFile(ExpectedTestResult expectedResult);
+    Task<IEnumerable<string>> GetPersistedFileNames();
+    Task DeleteFile(string method, string path);
   }
 }

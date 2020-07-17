@@ -1,18 +1,16 @@
-﻿using System;
-using System.IO;
-using System.Text;
+﻿using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MockApiServer.Helpers;
 using MockApiServer.Services;
-using Newtonsoft.Json;
 
 namespace MockApiServer.Controllers
 {
   [ApiController]
   [Route("{*url}")]
-  public class GenericController : ControllerBase
+  public class GenericController : MockControllerBase<GenericController>
   {
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly IMockDataService _mockDataService;
@@ -20,7 +18,8 @@ namespace MockApiServer.Controllers
 
     public GenericController(
       IWebHostEnvironment webHostEnvironment, 
-      IMockDataService mockDataService, ILogger<GenericController> logger)
+      IMockDataService mockDataService, ILogger<GenericController> logger):
+      base(logger, mockDataService)
     {
       _webHostEnvironment = webHostEnvironment;
       _mockDataService = mockDataService;
@@ -28,30 +27,15 @@ namespace MockApiServer.Controllers
     }
 
     [HttpGet]
-    public IActionResult Get()
-    {
-      return GetResponseFromFile();
-    }
-
     [HttpPost]
-    public IActionResult Post()
-    {
-      return GetResponseFromFile();
-    }
-
     [HttpPut]
-    public IActionResult Put()
-    {
-      return GetResponseFromFile();
-    }
-
     [HttpDelete]
-    public IActionResult Delete()
+    public async Task<IActionResult> All()
     {
-      return GetResponseFromFile();
+      return await GetResponseFromFile();
     }
 
-    private IActionResult GetResponseFromFile()
+    private async Task<IActionResult> GetResponseFromFile()
     {
       string path = Request.Path;
       var method = Request.Method;
@@ -60,20 +44,7 @@ namespace MockApiServer.Controllers
       if (path == "/")
         return HomeScreen();
 
-      try
-      {
-        return new OkObjectResult(JsonConvert.DeserializeObject(_mockDataService.ReadFile(method, path)));
-      }
-      catch (FileNotFoundException e)
-      {
-        _logger.LogInformation($"File not found: {e.FileName}");
-        return NotFound(e.Message);
-      }
-      catch (Exception ex)
-      {
-        _logger.LogError(ex, $"Failed to read and parse content from the file: {path}");
-        return BadRequest(ex.Message);
-      }
+      return await GetExpectedResult(method, path);
     }
     private IActionResult HomeScreen()
     {
