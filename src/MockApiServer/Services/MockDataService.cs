@@ -22,6 +22,8 @@ namespace MockApiServer.Services
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _env;
     private readonly MD5CryptoServiceProvider _md5CryptoServiceProvider;
+    private readonly Dictionary<string, ExpectedTestResult> _expectations;
+    private readonly Dictionary<string, int> _expectationRead;
 
     public MockDataService(IConfiguration configuration, IWebHostEnvironment env)
     {
@@ -29,10 +31,18 @@ namespace MockApiServer.Services
       _env = env;
       _validate();
       _md5CryptoServiceProvider = new MD5CryptoServiceProvider();
+      _expectations = new Dictionary<string, ExpectedTestResult>();
+      _expectationRead = new Dictionary<string, int>();
     }
 
     public async Task<string> ReadFile(string httpMethod, string url, string queryString = null, dynamic razorModel=null)
     {
+      var fileName = _getFileNameFromUrl(httpMethod, url, queryString);
+
+      var expectation = _getExpectation(fileName);
+      if (expectation != null)
+        return expectation;
+        
       var filePath = _resolveFileNameFromRequest(httpMethod, url, queryString);
 
       if (Path.GetExtension(filePath) == ".razor")
@@ -73,6 +83,34 @@ namespace MockApiServer.Services
       var filePath = _resolveFileNameFromRequest(method, path, queryString);
       File.Delete(filePath);
       return Task.CompletedTask;
+    }
+
+    public void SetupExpectation(ExpectedTestResult testCase)
+    {
+      var fileName = _getFileNameFromUrl(testCase.HttpMethod, testCase.RequestPath, testCase.QueryString);
+      if (_expectations.ContainsKey(fileName))
+      {
+        _expectations[fileName] = testCase;
+        return;
+      }
+      _expectations.Add(fileName, testCase);
+      _expectationRead.Add(fileName, 0);
+    }
+
+    public int Expect(string method, in int count, string path, string queryString = null)
+    {
+      var fileName = _getFileNameFromUrl(method, path, queryString);
+      if (!_expectations.ContainsKey(fileName))
+        return 0;
+      var actual = _expectationRead[fileName];
+      _expectations.Remove(fileName);
+      _expectationRead.Remove(fileName);
+      return actual;
+    }
+
+    public IEnumerable<string> GetExpectationKeys()
+    {
+      return _expectations.Keys;
     }
 
     #region Private
@@ -141,6 +179,13 @@ namespace MockApiServer.Services
       if (files.Length > 1)
         throw new InvalidOperationException($"More than one result found: {string.Join(',', files.Select(x => x.Name))}");
       return files.First().FullName;
+    }
+    private string _getExpectation(string fileName)
+    {
+      if (!_expectations.ContainsKey(fileName))
+        return null;
+      _expectationRead[fileName] = _expectationRead[fileName]+1;
+      return JsonConvert.SerializeObject(_expectations[fileName].ExpectedResult);
     }
     #endregion
   }

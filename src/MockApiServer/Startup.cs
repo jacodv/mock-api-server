@@ -30,7 +30,7 @@ namespace MockApiServer
       services.AddMvcCore()
         .AddNewtonsoftJson()
         .AddFluentValidation();
-      services.AddScoped<IMockDataService, MockDataService>();
+      services.AddSingleton<IMockDataService, MockDataService>();
       services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
     }
 

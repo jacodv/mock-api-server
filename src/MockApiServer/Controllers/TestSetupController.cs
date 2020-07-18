@@ -29,7 +29,10 @@ namespace MockApiServer.Controllers
     [HttpGet]
     public async Task<IEnumerable<string>> Get()
     {
-      return await _mockDataService.GetPersistedFileNames();
+      var result = new List<string>();
+      result.AddRange(_mockDataService.GetExpectationKeys());
+      result.AddRange(await _mockDataService.GetPersistedFileNames());
+      return result;
     }
 
     [HttpGet("{method}")]
@@ -41,16 +44,15 @@ namespace MockApiServer.Controllers
 
     [HttpPost]
     [HttpPut]
-    public async Task<IActionResult> PostPut([FromBody] ExpectedTestResult expectedResult)
+    public async Task<IActionResult> PostPut([FromBody] ExpectedTestResult testCase)
     {
       if (!ModelState.IsValid)
         return BadRequest(ModelState);
 
-      await _mockDataService.WriteFile(expectedResult);
+      await _mockDataService.WriteFile(testCase);
 
       return Ok();
     }
-
 
     [HttpDelete("{method}")]
     public async Task<IActionResult> Delete(string method, [FromQuery]string path, [FromQuery] string queryString)
@@ -64,6 +66,29 @@ namespace MockApiServer.Controllers
         return NotFound($"{method}?path={path}");
       }
       return Ok();
+    }
+
+    [Route("SetupExpectation")]
+    [HttpPut]
+    [HttpPost]
+    public IActionResult SetupExpectation([FromBody] ExpectedTestResult testCase)
+    {
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      _mockDataService.SetupExpectation(testCase);
+
+      return Ok();
+    }
+
+    [Route("Expect/{count}/{method}")]
+    [HttpGet]
+    public IActionResult Expect(string method, int count, [FromQuery] string path, [FromQuery] string queryString)
+    {
+      var actual = _mockDataService.Expect(method, count, path, queryString);
+      if (actual == count)
+        return Ok();
+      return BadRequest($"Expected: {count} but executed: {actual}");
     }
   }
 }
