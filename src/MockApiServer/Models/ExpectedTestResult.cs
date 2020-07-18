@@ -9,6 +9,7 @@ namespace MockApiServer.Models
     public string RequestPath { get; set; }
     public dynamic ExpectedResult { get; set; }
     public string QueryString { get; set; }
+    public bool IsRazorFile { get; set; }
   }
 
   public class ExpectedTestResultValidator : AbstractValidator<ExpectedTestResult>

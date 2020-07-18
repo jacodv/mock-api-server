@@ -223,15 +223,67 @@ namespace MockApiServer.Tests
       readAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    private async Task _validateReadItemAndAllItems(string testControllerPath, string getItemUrl)
+    [Fact]
+    public async Task CRUD_GivenValidInputWithQueryStringAndRazor_ShouldCreateReadUpdateDelete()
+    {
+      // Arrange
+      const string requestPath = "api/Tests";
+      const string queryString = "?param1=one&param2=two";
+      const string httpMethod = "GET";
+      var newModel = new SampleModel()
+      {
+        Id = "CrudTestId",
+        Name = "CrudTestName"
+      };
+      var testCase = new ExpectedTestResult()
+      {
+        ExpectedResult = newModel,
+        HttpMethod = httpMethod,
+        RequestPath = requestPath,
+        QueryString = queryString,
+        IsRazorFile = true
+      };
+
+      var itemUrl = $"{TestControllerPath}/{httpMethod}?path={HttpUtility.UrlEncode(requestPath)}&queryString={HttpUtility.UrlEncode(queryString)}";
+
+      // Act and Assert
+      // CREATE
+      var createResponse = await _fixture.Client.PostAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
+      createResponse.EnsureSuccessStatusCode();
+      // CREATE READ
+      await _validateReadItemAndAllItems(TestControllerPath, itemUrl);
+
+      // UPDATE
+      var updatedModel = new SampleModel()
+      {
+        Id = "CrudTestIdUpdated",
+        Name = "CrudTestNameUpdated"
+      };
+      testCase.ExpectedResult = updatedModel;
+      var updateResponse = await _fixture.Client.PutAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
+      updateResponse.EnsureSuccessStatusCode();
+      // UPDATE READ
+      await _validateReadItemAndAllItems(TestControllerPath, itemUrl);
+
+      // DELETE
+      var deleteResponse = await _fixture.Client.DeleteAsync(itemUrl);
+      deleteResponse.EnsureSuccessStatusCode();
+      // DELETE READ
+      var readAfterDelete = await _fixture.Client.GetAsync(itemUrl);
+      readAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private async Task _validateReadItemAndAllItems(string testControllerPath, string getItemUrl, string fileName = "get_api_tests")
     {
       var response = await _fixture.Client.GetAsync(getItemUrl);
       await _fixture.ValidateSuccessResponse<SampleModel>(response);
 
       var responseAll =
         await _fixture.Client.GetAsync($"{testControllerPath}");
-      var resultAllAfterCreate = await _fixture.ValidateSuccessResponse<string[]>(responseAll);
-      resultAllAfterCreate.Any(x => x.Contains("get_api_tests")).Should().BeTrue();
+      var resultAll = await _fixture.ValidateSuccessResponse<string[]>(responseAll);
+      resultAll.Any(x => x.Contains(fileName))
+        .Should()
+        .BeTrue($"But found: {string.Join(',', resultAll)}");
     }
   }
 }

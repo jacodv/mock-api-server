@@ -18,11 +18,11 @@ namespace MockApiServer.Controllers
       _logger = logger;
       _mockDataService = mockDataService;
     }
-    protected async Task<IActionResult> GetExpectedResult(string httpMethod, string path, string queryString=null)
+    protected async Task<IActionResult> GetExpectedResult(string httpMethod, string path, string queryString=null, dynamic razorModel=null)
     {
       try
       {
-        return new OkObjectResult(JsonConvert.DeserializeObject(value: await _mockDataService.ReadFile(httpMethod, path, queryString)));
+        return new OkObjectResult(JsonConvert.DeserializeObject(value: await _mockDataService.ReadFile(httpMethod, path, queryString, razorModel)));
       }
       catch (FileNotFoundException e)
       {

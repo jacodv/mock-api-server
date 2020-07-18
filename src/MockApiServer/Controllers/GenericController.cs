@@ -1,6 +1,11 @@
-﻿using System.Text;
+﻿using System;
+using System.Dynamic;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MockApiServer.Helpers;
@@ -44,12 +49,38 @@ namespace MockApiServer.Controllers
       if (path == "/")
         return HomeScreen();
 
-      return await GetExpectedResult(method, path, Request.QueryString.HasValue?Request.QueryString.Value:null);
+      dynamic razorModel = new ExpandoObject();
+      try
+      {
+        razorModel.HttpMethod = method;
+        razorModel.RequestPath = path;
+        razorModel.QueryString = Request.QueryString.ToString();
+        razorModel.RequestBody = await _getBodyContentAsStringAsync(Request);
+      }
+      catch (Exception e)
+      {
+        Console.WriteLine(e);
+        throw;
+      }
+
+      return await GetExpectedResult(method, path, Request.QueryString.HasValue?Request.QueryString.Value:null, razorModel);
     }
     private IActionResult HomeScreen()
     {
       var homeScreen = _mockDataService.GetHomeScreen();
       return Content(homeScreen, "text/html", Encoding.UTF8);
+    }
+    private static async Task<string> _getBodyContentAsStringAsync(HttpRequest request)
+    {
+      string content;
+
+      await using (var receiveStream = request.Body)
+      {
+        using var readStream = new StreamReader(receiveStream);
+        content = await readStream.ReadToEndAsync();
+      }
+
+      return content;
     }
   }
 }

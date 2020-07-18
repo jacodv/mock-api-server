@@ -1,0 +1,27 @@
+@using System;
+@using System.Linq;
+@using System.Collections.Generic;
+@{
+    var now = DateTime.Now;
+    string requestBody = Model.RequestBody;
+    var userName = "Not Set";
+    if (!string.IsNullOrEmpty(requestBody))
+    {
+        var keyPairs = requestBody.Split('&');
+        foreach (var keyPair in keyPairs)
+        {
+            if (keyPair.StartsWith("username"))
+            {
+                userName = keyPair.Split('=')[1];
+            }
+        }
+    }
+}
+// Output
+{
+    "UserName": "@userName",
+    "Token": "test-user-token",
+    "Created": "@now.ToUniversalTime()",
+    "Expires": "@now.AddMinutes(30).ToUniversalTime()",
+    "ExpiresInSeconds": 1800
+    }
