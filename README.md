@@ -18,3 +18,19 @@ Execute ```https://localhost:5001/api/sample``` to test the with a provided samp
 {"Id":"SampleId","Name":"SampleName"}
 ```
 
+### Samples
+### [Postman collection](./src/Samples/PostMan/Mock-Api-Server.postman_collection.json)
+Located in ```src/Samples/PostMan/Mock-Api-Server.postman_collection.json```
+
+![](2020-07-19-19-12-11.png)
+
+# TODO
+ - Expectations Samples (Setup, Execute and Verify calls)
+ - Setup GraphQL Samples
+    >See `CRUD_GivenValidGraphQL_ShouldCreateReadUpdateDelete()`
+ - GraphQL Expectations Samples (Setup, Execute and Verify calls)
+    >See ```ExpectOne_GiveValidGraphQlSetupAndValidRequest_ShouldVerify```
+ - Setup Tests with RAZOR syntax responses
+    >See ```CRUD_GivenValidInputWithQueryStringAndRazor_ShouldCreateReadUpdateDelete```
+    > and sample file ```post_auth.razor```
+ - Create BULK upload for Setups

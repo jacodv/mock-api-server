@@ -54,7 +54,8 @@ namespace MockApiServer.Controllers
       return Ok();
     }
 
-    [HttpDelete("{method}")]
+    [Route("{method}")]
+    [HttpDelete]
     public async Task<IActionResult> Delete(string method, [FromQuery]string path, [FromQuery] string queryString)
     {
       try
