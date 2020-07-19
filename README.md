@@ -1,4 +1,4 @@
-# mock-json-api
+# mock-api-server
 ASPNet Core 3.x Webserver that can be used to mock any API request.  The web server supports most RESTful operations as well as standard http requests.  The mock server can also be confugured to respond to GraphQL request providing that the GraphQL endpoint is `/graphql`
 
 ## Getting started
@@ -8,7 +8,7 @@ Clone the repository and build the solution by running, command below, in the re
 dotnet build
 ```
 
-Start the `Mock-Api-Server` with 
+Start the `Mock-Api-Server` with optionally add ```-- urls https://localhost:<<port>>``` to specify a custom port
 ```
 dotnet run --project .\MockApiServer\MockApiServer.csproj
 ```
@@ -17,3 +17,4 @@ Execute ```https://localhost:5001/api/sample``` to test the with a provided samp
 ```
 {"Id":"SampleId","Name":"SampleName"}
 ```
+
