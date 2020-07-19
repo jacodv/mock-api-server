@@ -1,3 +1,4 @@
 obj
 .vs
 bin
+/src/MockApiServer.v3.ncrunchsolution.user
