@@ -1,26 +1,19 @@
 # mock-json-api
-A simple web application that generates responses based on your json files
+ASPNet Core 3.x Webserver that can be used to mock any API request.  The web server supports most RESTful operations as well as standard http requests.  The mock server can also be confugured to respond to GraphQL request providing that the GraphQL endpoint is `/graphql`
 
 ## Getting started
 
-Nice! You've got the repository and are eager to get started! Now lets start playing!
+Clone the repository and build the solution by running, command below, in the repository root.  Make sure all the nuget packages were restored and that the solution build successfully.
 ```
 dotnet build
 ```
 
-And you will see a response of
-
+Start the `Mock-Api-Server` with 
 ```
-Microsoft (R) Build Engine version 16.4.0+e901037fe for .NET Core
-Copyright (C) Microsoft Corporation. All rights reserved.
+dotnet run --project .\MockApiServer\MockApiServer.csproj
+```
 
-  Restore completed in 199.31 ms for D:\ACodersBlog\mock-json-api\src\MockApiJsonServer.csproj.
-  MockApiJsonServer -> D:\ACodersBlog\mock-json-api\src\bin\Debug\netcoreapp3.1\MockApiJsonServer.dll
-
-Build succeeded.
-    0 Warning(s)
-    0 Error(s)
-
-Time Elapsed 00:00:01.51
-
+Execute ```https://localhost:5001/api/sample``` to test the with a provided sample document and verify that the below response was received.
+```
+{"Id":"SampleId","Name":"SampleName"}
 ```
