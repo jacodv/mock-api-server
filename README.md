@@ -8,7 +8,7 @@ Clone the repository and build the solution by running, command below, in the re
 dotnet build
 ```
 
-Start the `Mock-Api-Server` with optionally add ```-- urls https://localhost:<<port>>``` to specify a custom port
+Start the `Mock-Api-Server` with optionally add ```-- urls https://localhost:<<port>>``` to specify a custom port. Defaults are http (5000) and https (5001)
 ```
 dotnet run --project .\MockApiServer\MockApiServer.csproj
 ```
