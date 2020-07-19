@@ -1,10 +1,10 @@
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using FluentAssertions;
 using MockApiServer.Models;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -70,7 +70,7 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new ExpectedTestResult()
+      var testCase = new TestCase()
       {
         HttpMethod = null,
         RequestPath = "api/somePath",
@@ -91,7 +91,7 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new ExpectedTestResult()
+      var testCase = new TestCase()
       {
         HttpMethod = "POST",
         RequestPath = null,
@@ -112,7 +112,7 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new ExpectedTestResult()
+      var testCase = new TestCase()
       {
         HttpMethod = "POST",
         RequestPath = "api/somePath",
@@ -139,7 +139,7 @@ namespace MockApiServer.Tests
         Id = "CrudTestId",
         Name = "CrudTestName"
       };
-      var testCase = new ExpectedTestResult()
+      var testCase = new TestCase()
       {
         ExpectedResult = newModel,
         HttpMethod = httpMethod,
@@ -187,7 +187,7 @@ namespace MockApiServer.Tests
         Id = "CrudTestId",
         Name = "CrudTestName"
       };
-      var testCase = new ExpectedTestResult()
+      var testCase = new TestCase()
       {
         ExpectedResult = newModel,
         HttpMethod = httpMethod,
@@ -236,7 +236,7 @@ namespace MockApiServer.Tests
         Id = "CrudTestId",
         Name = "CrudTestName"
       };
-      var testCase = new ExpectedTestResult()
+      var testCase = new TestCase()
       {
         ExpectedResult = newModel,
         HttpMethod = httpMethod,
@@ -274,102 +274,76 @@ namespace MockApiServer.Tests
       readAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task CRUD_GivenValidGraphQL_ShouldCreateReadUpdateDelete()
+    {
+      // Arrange
+      const string query = @"{   
+	                              sample(first:3)
+                                    {
+                                      nodes{
+                                        id
+                                      }
+                                  }
+                              }";
+      const string result = @"
+                              {
+                                data: {
+                                    sample: {
+                                      nodes: [
+                                      {
+                                        id: ""Id1""
+                                      },
+                                      {
+                                        id: ""Id2""
+                                      },
+                                      {
+                                        id: ""Id3""
+                                      }
+                                      ]
+                                    }
+                                  },
+                                  extensions: {}
+                                }";
+
+      var testCase = new GraphQlTestCase()
+      {
+        OperationName = "GetSamples",
+        Query = query,
+        ExpectedResult = JsonConvert.DeserializeObject(result)
+      };
+
+      // Act and Assert
+      // CREATE
+      var createResponse = await _fixture.Client.PostAsync($"{TestControllerPath}/GraphQlSetup", _fixture.GetHttpContent(testCase));
+      createResponse.EnsureSuccessStatusCode();
+      // CREATE READ
+      var fileName = await _validateAllItems(TestControllerPath, testCase.OperationName.ToLower());
+
+
+      // DELETE
+      var deleteResponse = await _fixture.Client.DeleteAsync($"{TestControllerPath}/DeleteGraphQl?fileName={HttpUtility.UrlEncode(fileName)}");
+      deleteResponse.EnsureSuccessStatusCode();
+    }
+
     #region Private
     private async Task _validateReadItemAndAllItems(string testControllerPath, string getItemUrl, string fileName = "get_api_tests")
     {
       var response = await _fixture.Client.GetAsync(getItemUrl);
       await _fixture.ValidateSuccessResponse<SampleModel>(response);
 
+      await _validateAllItems(testControllerPath,fileName);
+    }
+    private async Task<string> _validateAllItems(string testControllerPath, string fileName)
+    {
       var responseAll =
         await _fixture.Client.GetAsync($"{testControllerPath}");
       var resultAll = await _fixture.ValidateSuccessResponse<string[]>(responseAll);
-      resultAll.Any(x => x.Contains(fileName))
-        .Should()
-        .BeTrue($"But found: {string.Join(',', resultAll)}");
+
+      var foundItem = resultAll.FirstOrDefault(x => x.Contains(fileName));
+      foundItem.Should().NotBeNullOrEmpty($"But found: {string.Join(',', resultAll)}");
+      return foundItem;
     }
     #endregion
-  }
-
-  public class ExpectAndVerifyTests : IClassFixture<TestFixture<Startup>>
-  {
-    private const string SetupControllerPath = "/api/TestSetup";
-
-    private readonly TestFixture<Startup> _fixture;
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public ExpectAndVerifyTests(TestFixture<Startup> fixture,
-      ITestOutputHelper testOutputHelper)
-    {
-      _fixture = fixture;
-      _testOutputHelper = testOutputHelper;
-      _fixture.Init(_testOutputHelper);
-    }
-
-    [Fact]
-    public async Task ExpectOne_GiveValidSetupAndValidRequest_ShouldVerify()
-    {
-      // Arrange
-      const string request = "api/ExpectOneTest";
-      const string method = "POST";
-      const int expectedCount = 1;
-      var testCase = new ExpectedTestResult(){
-        RequestPath = request,
-        HttpMethod = method,
-        ExpectedResult = new
-        {
-          Field1 = "field1",
-          Field2 = "field2"
-        }
-      };
-
-      // Act Setup
-      var setupResponse = await _fixture.Client.PostAsync(
-        $"{SetupControllerPath}/SetupExpectation",
-        _fixture.GetHttpContent(testCase));
-      setupResponse.EnsureSuccessStatusCode();
-      
-      // Act Test
-      var testResponse = await _fixture.Client.PostAsync(
-        request, 
-        new StringContent("{TestItem:'testItem'}"));
-      testResponse.EnsureSuccessStatusCode();
-
-      // Assert
-      var verifyResponse = await _fixture.Client.GetAsync(
-          $"{SetupControllerPath}/Expect/{expectedCount}/{method}?path={request}&queryString=");
-      verifyResponse.EnsureSuccessStatusCode();
-    }
-
-    [Fact]
-    public async Task ExpectOne_GiveValidSetupAndNoRequest_ShouldNotVerify()
-    {
-      // Arrange
-      const string request = "api/ExpectOneTest";
-      const string method = "POST";
-      const int expectedCount = 1;
-      var testCase = new ExpectedTestResult()
-      {
-        RequestPath = request,
-        HttpMethod = method,
-        ExpectedResult = new
-        {
-          Field1 = "field1",
-          Field2 = "field2"
-        }
-      };
-
-      // Act Setup
-      var setupResponse = await _fixture.Client.PostAsync(
-        $"{SetupControllerPath}/SetupExpectation",
-        _fixture.GetHttpContent(testCase));
-      setupResponse.EnsureSuccessStatusCode();
-
-      // Assert
-      var verifyResponse = await _fixture.Client.GetAsync(
-        $"{SetupControllerPath}/Expect/{expectedCount}/{method}?path={request}&queryString=");
-      verifyResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-      var error = await verifyResponse.Content.ReadAsStringAsync();
-      error.Should().Be($"\"Expected: 1 but executed: 0\"");
-    }
   }
 }

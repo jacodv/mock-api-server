@@ -46,10 +46,10 @@ namespace MockApiServer.Controllers
       var method = Request.Method;
       path.ReplaceDoubleSlashes();
 
-      if (path == "/")
+      if (path=="/")
         return HomeScreen();
 
-      dynamic razorModel = new ExpandoObject();
+      var razorModel = new Models.RazorModel();
       try
       {
         razorModel.HttpMethod = method;
@@ -63,6 +63,8 @@ namespace MockApiServer.Controllers
         throw;
       }
 
+      if (path=="/graphql")
+        return await GetGraphQlResult(razorModel);
       return await GetExpectedResult(method, path, Request.QueryString.HasValue?Request.QueryString.Value:null, razorModel);
     }
     private IActionResult HomeScreen()

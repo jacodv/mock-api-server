@@ -44,7 +44,7 @@ namespace MockApiServer.Controllers
 
     [HttpPost]
     [HttpPut]
-    public async Task<IActionResult> PostPut([FromBody] ExpectedTestResult testCase)
+    public async Task<IActionResult> PostPut([FromBody] TestCase testCase)
     {
       if (!ModelState.IsValid)
         return BadRequest(ModelState);
@@ -71,7 +71,7 @@ namespace MockApiServer.Controllers
     [Route("SetupExpectation")]
     [HttpPut]
     [HttpPost]
-    public IActionResult SetupExpectation([FromBody] ExpectedTestResult testCase)
+    public IActionResult SetupExpectation([FromBody] TestCase testCase)
     {
       if (!ModelState.IsValid)
         return BadRequest(ModelState);
@@ -86,6 +86,61 @@ namespace MockApiServer.Controllers
     public IActionResult Expect(string method, int count, [FromQuery] string path, [FromQuery] string queryString)
     {
       var actual = _mockDataService.Expect(method, count, path, queryString);
+      if (actual == count)
+        return Ok();
+      return BadRequest($"Expected: {count} but executed: {actual}");
+    }
+
+    [Route("GraphQlSetup")]
+    [HttpPost]
+    [HttpPut]
+    public async Task<IActionResult> GraphQlSetup(GraphQlTestCase testCase)
+    {
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      await _mockDataService.WriteFile(testCase);
+
+      return Ok();
+    }
+
+    [Route("GraphQlDelete")]
+    [HttpDelete]
+    public async Task<IActionResult> DeleteGraphQl([FromQuery] string fileName)
+    {
+      try
+      {
+        await _mockDataService.DeleteFile(fileName);
+      }
+      catch (FileNotFoundException)
+      {
+        return NotFound(fileName);
+      }
+      return Ok();
+    }
+
+    [Route("GraphQlExpectation")]
+    [HttpPut]
+    [HttpPost]
+    public IActionResult GraphQlExpectation([FromBody] GraphQlTestCase testCase)
+    {
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      _mockDataService.SetupExpectation(testCase);
+
+      return Ok();
+    }
+
+    [Route("GraphQlExpect/{count}")]
+    [HttpPut]
+    [HttpPost]
+    public IActionResult GraphQlExpect([FromBody] GraphQlTestCase testCase, int count)
+    {
+      if (!ModelState.IsValid)
+        return BadRequest(ModelState);
+
+      var actual = _mockDataService.Expect(testCase, count);
       if (actual == count)
         return Ok();
       return BadRequest($"Expected: {count} but executed: {actual}");

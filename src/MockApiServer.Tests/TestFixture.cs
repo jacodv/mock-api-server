@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -81,10 +83,17 @@ namespace MockApiServer.Tests
       Client.BaseAddress = new Uri("http://localhost:3001");
       Client.DefaultRequestHeaders.Accept.Clear();
       Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+      // ReSharper disable once InconsistentNaming
+      var graphQLEndPoint = new Uri("/graphql",UriKind.Relative);
+      GqlClient = new GraphQLHttpClient(
+        options:new GraphQLHttpClientOptions(){EndPoint = graphQLEndPoint}, 
+        serializer: new NewtonsoftJsonSerializer(),
+        Client);
     }
 
     public HttpClient Client { get; }
-
+    public GraphQLHttpClient GqlClient { get; }
 
     protected virtual void InitializeServices(IServiceCollection services)
     {
@@ -118,10 +127,10 @@ namespace MockApiServer.Tests
       _testOutputHelper.WriteLine($"Success Result:\n{content}");
       return result;
     }
-    public HttpContent GetHttpContent(ExpectedTestResult expectedResult)
+    public HttpContent GetHttpContent(dynamic model)
     {
       return new StringContent(
-        JsonConvert.SerializeObject(expectedResult),
+        JsonConvert.SerializeObject(model),
         Encoding.UTF8,
         "application/json");
     }

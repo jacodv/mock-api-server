@@ -22,7 +22,7 @@ namespace MockApiServer.Services
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _env;
     private readonly MD5CryptoServiceProvider _md5CryptoServiceProvider;
-    private readonly Dictionary<string, ExpectedTestResult> _expectations;
+    private readonly Dictionary<string, dynamic> _expectations;
     private readonly Dictionary<string, int> _expectationRead;
 
     public MockDataService(IConfiguration configuration, IWebHostEnvironment env)
@@ -31,7 +31,7 @@ namespace MockApiServer.Services
       _env = env;
       _validate();
       _md5CryptoServiceProvider = new MD5CryptoServiceProvider();
-      _expectations = new Dictionary<string, ExpectedTestResult>();
+      _expectations = new Dictionary<string, dynamic>();
       _expectationRead = new Dictionary<string, int>();
     }
 
@@ -58,15 +58,23 @@ namespace MockApiServer.Services
         Path.Combine(_env.WebRootPath, "index.html"));
     }
 
-    public async Task WriteFile(ExpectedTestResult expectedResult)
+    public async Task WriteFile(TestCase testCase)
     {
-      var fileName = _getFileNameFromUrl(expectedResult.HttpMethod, expectedResult.RequestPath, expectedResult.QueryString);
+      var fileName = _getFileNameFromUrl(testCase.HttpMethod, testCase.RequestPath, testCase.QueryString);
       var filePath = _getFilePath(fileName);
 
-      if (expectedResult.IsRazorFile)
+      if (testCase.IsRazorFile)
         filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{Path.GetFileNameWithoutExtension(fileName)}.razor");
 
-      await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(expectedResult.ExpectedResult), CancellationToken.None);
+      await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(testCase.ExpectedResult), CancellationToken.None);
+    }
+
+    public async Task WriteFile(GraphQlTestCase testCase)
+    {
+      var fileName = _getGraphQlFileName(testCase.OperationName, testCase.Query);
+      var filePath = _getFilePath(fileName);
+
+      await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(testCase.ExpectedResult), CancellationToken.None);
     }
 
     public Task<IEnumerable<string>> GetPersistedFileNames()
@@ -75,6 +83,7 @@ namespace MockApiServer.Services
       return Task.FromResult(workingDirectory
         .GetFiles("*.json", SearchOption.TopDirectoryOnly)
         .Union(workingDirectory.GetFiles("*.razor", SearchOption.TopDirectoryOnly))
+        .Union(workingDirectory.GetFiles("*.graphql", SearchOption.TopDirectoryOnly))
         .Select(s => s.Name));
     }
 
@@ -85,7 +94,16 @@ namespace MockApiServer.Services
       return Task.CompletedTask;
     }
 
-    public void SetupExpectation(ExpectedTestResult testCase)
+    public Task DeleteFile(string fileName)
+    {
+      var filePath = _getFilePath(fileName);
+      if(!File.Exists(filePath))
+        throw new FileNotFoundException($"Invalid file: {fileName}", fileName);
+      File.Delete(filePath);
+      return Task.CompletedTask;
+    }
+
+    public void SetupExpectation(dynamic testCase)
     {
       var fileName = _getFileNameFromUrl(testCase.HttpMethod, testCase.RequestPath, testCase.QueryString);
       if (_expectations.ContainsKey(fileName))
@@ -100,17 +118,29 @@ namespace MockApiServer.Services
     public int Expect(string method, in int count, string path, string queryString = null)
     {
       var fileName = _getFileNameFromUrl(method, path, queryString);
-      if (!_expectations.ContainsKey(fileName))
-        return 0;
-      var actual = _expectationRead[fileName];
-      _expectations.Remove(fileName);
-      _expectationRead.Remove(fileName);
-      return actual;
+      return _expect(fileName);
+    }
+
+    public int Expect(GraphQlTestCase testCase, in int count)
+    {
+      var fileName = _getGraphQlFileName(testCase.OperationName, testCase.Query);
+      return _expect(fileName);
     }
 
     public IEnumerable<string> GetExpectationKeys()
     {
       return _expectations.Keys;
+    }
+
+    public async Task<string> ReadGraphQlFile(GraphQlRequest graphQlRequest)
+    {
+      var fileName = _getGraphQlFileName(graphQlRequest.operationName, graphQlRequest.query);
+      var expectation = _getExpectation(fileName);
+      if (expectation != null)
+        return expectation;
+
+      var filePath = _getFilePath(fileName);
+      return await File.ReadAllTextAsync(filePath);
     }
 
     #region Private
@@ -186,6 +216,31 @@ namespace MockApiServer.Services
         return null;
       _expectationRead[fileName] = _expectationRead[fileName]+1;
       return JsonConvert.SerializeObject(_expectations[fileName].ExpectedResult);
+    }
+    private string _getGraphQlFileName(string operationName, string query)
+    {
+      var queryHash = BitConverter
+        .ToString(_md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(_getMinifiedJsonString(query))))
+        .Replace("-", string.Empty);
+      return $"{operationName.ToLower()}_{queryHash}.graphql";
+    }
+    private int _expect(string fileName)
+    {
+      if (!_expectations.ContainsKey(fileName))
+        return 0;
+      var actual = _expectationRead[fileName];
+      _expectations.Remove(fileName);
+      _expectationRead.Remove(fileName);
+      return actual;
+    }
+    private string _getMinifiedJsonString(string jsonString)
+    {
+      var obj = JsonConvert.DeserializeObject(jsonString);
+      return _getMinifiedJsonString(obj);
+    }
+    private string _getMinifiedJsonString(object obj)
+    {
+      return JsonConvert.SerializeObject(obj, Formatting.None);
     }
     #endregion
   }

@@ -8,11 +8,15 @@ namespace MockApiServer.Services
   {
     Task<string> ReadFile(string httpMethod, string url, string queryString=null, dynamic razorModel=null);
     string GetHomeScreen();
-    Task WriteFile(ExpectedTestResult expectedResult);
+    Task WriteFile(TestCase testCase);
+    Task WriteFile(GraphQlTestCase testCase);
     Task<IEnumerable<string>> GetPersistedFileNames();
     Task DeleteFile(string method, string path, string queryString=null);
-    void SetupExpectation(ExpectedTestResult testCase);
+    Task DeleteFile(string fileName);
+    void SetupExpectation(dynamic testCase);
     int Expect(string method, in int count, string path, string queryString=null);
+    int Expect(GraphQlTestCase testCase, in int count);
     IEnumerable<string> GetExpectationKeys();
+    Task<string> ReadGraphQlFile(GraphQlRequest graphQlRequest);
   }
 }
