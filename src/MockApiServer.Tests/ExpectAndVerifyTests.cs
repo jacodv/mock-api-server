@@ -3,6 +3,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MockApiServer.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -89,5 +91,117 @@ namespace MockApiServer.Tests
       var error = await verifyResponse.Content.ReadAsStringAsync();
       error.Should().Be($"\"Expected: 1 but executed: 0\"");
     }
+
+    [Fact]
+    public async Task ExpectOne_GiveValidGraphQlSetupAndValidRequest_ShouldVerify()
+    {
+      // Arrange
+      const int expectedCount=1;
+      const string query = @"{   
+	                              expect(first:3)
+                                    {
+                                      nodes{
+                                        id
+                                      }
+                                  }
+                              }";
+      const string result = @"
+                              {
+                                data: {
+                                    expect: {
+                                      nodes: [
+                                      {
+                                        id: ""Id1""
+                                      },
+                                      {
+                                        id: ""Id2""
+                                      },
+                                      {
+                                        id: ""Id3""
+                                      }
+                                      ]
+                                    }
+                                  },
+                                  extensions: {}
+                                }";
+
+      var testCase = new GraphQlTestCase()
+      {
+        OperationName = "ExpectSamples",
+        Query = query,
+        ExpectedResult = JsonConvert.DeserializeObject(result)
+      };
+
+      // Act Setup
+      var setupResponse = await _fixture.Client.PostAsync(
+        $"{SetupControllerPath}/GraphQlExpectation",
+        _fixture.GetHttpContent(testCase));
+      setupResponse.EnsureSuccessStatusCode();
+
+      // Act Test
+      JObject graphResult = await _fixture.ExecuteGraphQlQuery(testCase.Query, testCase.OperationName);
+      graphResult["expect"].Should().NotBeNull();
+
+      // Assert
+      var verifyResponse = 
+        await _fixture.Client.PostAsync($"{SetupControllerPath}/GraphQlExpect/{expectedCount}", _fixture.GetHttpContent(testCase));
+      verifyResponse.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task ExpectOne_GiveValidGraphQlSetupAndValidRequest_ShouldNotVerify()
+    {
+      // Arrange
+      const int expectedCount = 1;
+      const string query = @"{   
+	                              expect(first:3)
+                                    {
+                                      nodes{
+                                        id
+                                      }
+                                  }
+                              }";
+      const string result = @"
+                              {
+                                data: {
+                                    expect: {
+                                      nodes: [
+                                      {
+                                        id: ""Id1""
+                                      },
+                                      {
+                                        id: ""Id2""
+                                      },
+                                      {
+                                        id: ""Id3""
+                                      }
+                                      ]
+                                    }
+                                  },
+                                  extensions: {}
+                                }";
+
+      var testCase = new GraphQlTestCase()
+      {
+        OperationName = "ExpectSamples",
+        Query = query,
+        ExpectedResult = JsonConvert.DeserializeObject(result)
+      };
+
+      // Act Setup
+      var setupResponse = await _fixture.Client.PostAsync(
+        $"{SetupControllerPath}/GraphQlExpectation",
+        _fixture.GetHttpContent(testCase));
+      setupResponse.EnsureSuccessStatusCode();
+
+      // Assert
+      var verifyResponse =
+        await _fixture.Client.PostAsync($"{SetupControllerPath}/GraphQlExpect/{expectedCount}", _fixture.GetHttpContent(testCase));
+
+      verifyResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+      var error = await verifyResponse.Content.ReadAsStringAsync();
+      error.Should().Be($"\"Expected: 1 but executed: 0\"");
+    }
+
   }
 }

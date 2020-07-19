@@ -13,7 +13,8 @@ namespace MockApiServer.Services
     Task<IEnumerable<string>> GetPersistedFileNames();
     Task DeleteFile(string method, string path, string queryString=null);
     Task DeleteFile(string fileName);
-    void SetupExpectation(dynamic testCase);
+    void SetupExpectation(TestCase testCase);
+    void SetupExpectation(GraphQlTestCase testCase);
     int Expect(string method, in int count, string path, string queryString=null);
     int Expect(GraphQlTestCase testCase, in int count);
     IEnumerable<string> GetExpectationKeys();

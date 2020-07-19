@@ -2,6 +2,7 @@
 {
   public class RazorModel
   {
+    public string TemplateName { get; set; }
     public string HttpMethod { get; set; }
     public string RequestPath { get; set; }
     public string QueryString { get; set; }

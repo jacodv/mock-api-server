@@ -1,11 +1,14 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.AspNetCore.Hosting;
@@ -120,8 +123,9 @@ namespace MockApiServer.Tests
     }
     public async Task<T> ValidateSuccessResponse<T>(HttpResponseMessage response)
     {
-      response.EnsureSuccessStatusCode();
       var content = await response.Content.ReadAsStringAsync();
+      response.EnsureSuccessStatusCode();
+
       var result = JsonConvert.DeserializeObject<T>(content);
       result.Should().NotBeNull();
       _testOutputHelper.WriteLine($"Success Result:\n{content}");
@@ -135,16 +139,23 @@ namespace MockApiServer.Tests
         "application/json");
     }
 
+    public async Task<dynamic> ExecuteGraphQlQuery(string query, string operationName)
+    {
+      var graphQlRequest = new GraphQLRequest(query, null, operationName);
+      var graphQlResponse = await GqlClient.SendQueryAsync<dynamic>(graphQlRequest, CancellationToken.None);
+
+      if (!(graphQlResponse.Errors?.Length > 0))
+        return graphQlResponse.Data;
+
+      foreach (var err in graphQlResponse.Errors)
+        _testOutputHelper.WriteLine("ERROR: " + JsonConvert.SerializeObject(err));
+      throw new InvalidOperationException(graphQlResponse.Errors.First().Message);
+    }
 
     public void Dispose()
     {
       Client.Dispose();
       _testServer.Dispose();
     }
-  }
-
-  public static class TestHelper
-  {
-
   }
 }

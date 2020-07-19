@@ -16,7 +16,7 @@ namespace MockApiServer.Tests
     private readonly TestFixture<Startup> _fixture;
     private readonly ITestOutputHelper _testOutputHelper;
 
-    public TestSetupControllerTests(TestFixture<Startup> fixture, 
+    public TestSetupControllerTests(TestFixture<Startup> fixture,
       ITestOutputHelper testOutputHelper)
     {
       _fixture = fixture;
@@ -33,7 +33,7 @@ namespace MockApiServer.Tests
       // Act
       var responseAllAfterCreate =
         await _fixture.Client.GetAsync($"{testControllerPath}");
-      
+
       // Assert
       var resultAllAfterCreate = await _fixture.ValidateSuccessResponse<string[]>(responseAllAfterCreate);
       resultAllAfterCreate.Should().Contain("get_api_sample.json");
@@ -74,7 +74,7 @@ namespace MockApiServer.Tests
       {
         HttpMethod = null,
         RequestPath = "api/somePath",
-        ExpectedResult = new { prop="prop1"}
+        ExpectedResult = new { prop = "prop1" }
       };
 
       // Act Assert Post
@@ -179,7 +179,8 @@ namespace MockApiServer.Tests
     public async Task CRUD_GivenValidInputWithQueryString_ShouldCreateReadUpdateDelete()
     {
       // Arrange
-      const string requestPath = "api/Tests";
+      const string requestPath = "api/CRUDTests";
+      const string expectedFileName = "get_api_crudtests";
       const string queryString = "?param1=one&param2=two";
       var httpMethod = "GET";
       var newModel = new SampleModel()
@@ -202,7 +203,7 @@ namespace MockApiServer.Tests
       var createResponse = await _fixture.Client.PostAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
       createResponse.EnsureSuccessStatusCode();
       // CREATE READ
-      await _validateReadItemAndAllItems(TestControllerPath, itemUrl);
+      await _validateReadItemAndAllItems(TestControllerPath, itemUrl, expectedFileName);
 
       // UPDATE
       var updatedModel = new SampleModel()
@@ -214,7 +215,7 @@ namespace MockApiServer.Tests
       var updateResponse = await _fixture.Client.PutAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
       updateResponse.EnsureSuccessStatusCode();
       // UPDATE READ
-      await _validateReadItemAndAllItems(TestControllerPath, itemUrl);
+      await _validateReadItemAndAllItems(TestControllerPath, itemUrl, expectedFileName);
 
       // DELETE
       var deleteResponse = await _fixture.Client.DeleteAsync(itemUrl);
@@ -228,7 +229,8 @@ namespace MockApiServer.Tests
     public async Task CRUD_GivenValidInputWithQueryStringAndRazor_ShouldCreateReadUpdateDelete()
     {
       // Arrange
-      const string requestPath = "api/Tests";
+      const string requestPath = "api/CrudTestsWithQueryString";
+      const string expectedFileName = "get_api_crudtestswithquerystring";
       const string queryString = "?param1=one&param2=two";
       const string httpMethod = "GET";
       var newModel = new SampleModel()
@@ -252,7 +254,7 @@ namespace MockApiServer.Tests
       var createResponse = await _fixture.Client.PostAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
       createResponse.EnsureSuccessStatusCode();
       // CREATE READ
-      await _validateReadItemAndAllItems(TestControllerPath, itemUrl);
+      await _validateReadItemAndAllItems(TestControllerPath, itemUrl, expectedFileName);
 
       // UPDATE
       var updatedModel = new SampleModel()
@@ -264,7 +266,7 @@ namespace MockApiServer.Tests
       var updateResponse = await _fixture.Client.PutAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
       updateResponse.EnsureSuccessStatusCode();
       // UPDATE READ
-      await _validateReadItemAndAllItems(TestControllerPath, itemUrl);
+      await _validateReadItemAndAllItems(TestControllerPath, itemUrl, expectedFileName);
 
       // DELETE
       var deleteResponse = await _fixture.Client.DeleteAsync(itemUrl);
@@ -332,7 +334,7 @@ namespace MockApiServer.Tests
       var response = await _fixture.Client.GetAsync(getItemUrl);
       await _fixture.ValidateSuccessResponse<SampleModel>(response);
 
-      await _validateAllItems(testControllerPath,fileName);
+      await _validateAllItems(testControllerPath, fileName);
     }
     private async Task<string> _validateAllItems(string testControllerPath, string fileName)
     {
@@ -341,7 +343,7 @@ namespace MockApiServer.Tests
       var resultAll = await _fixture.ValidateSuccessResponse<string[]>(responseAll);
 
       var foundItem = resultAll.FirstOrDefault(x => x.Contains(fileName));
-      foundItem.Should().NotBeNullOrEmpty($"But found: {string.Join(',', resultAll)}");
+      foundItem.Should().NotBeNullOrEmpty($"{fileName}: But found: {string.Join(",\n", resultAll)}");
       return foundItem;
     }
     #endregion

@@ -44,33 +44,12 @@ namespace MockApiServer.Tests
                               }";
       const string operationName = "SampleQuery";
       // Act
-      JObject result = await _executeQuery(query, operationName);
+      JObject result = await _fixture.ExecuteGraphQlQuery(query, operationName);
 
       // Assert
       _testOutputHelper.WriteLine($"{result["sample"]}");
       result["sample"].Should().NotBeNull();
 
-    }
-
-    private async Task<dynamic> _executeQuery(string query, string operationName)
-    {
-      var graphQlRequest = new GraphQLRequest(query, null, operationName);
-      var graphQlResponse = await _fixture.GqlClient.SendQueryAsync<dynamic>(graphQlRequest, CancellationToken.None);
-
-      if (!(graphQlResponse.Errors?.Length > 0)) 
-        return graphQlResponse.Data;
-
-      foreach (var err in graphQlResponse.Errors)
-        _testOutputHelper.WriteLine("ERROR: " + JsonConvert.SerializeObject(err));
-      throw new InvalidOperationException(graphQlResponse.Errors.First().Message);
-    }
-
-    public static bool IsPropertyExist(dynamic result, string name)
-    {
-      if (result is ExpandoObject)
-        return ((IDictionary<string, object>)result).ContainsKey(name);
-
-      return result.GetType().GetProperty(name) != null;
     }
   }
 }

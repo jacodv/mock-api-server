@@ -104,16 +104,15 @@ namespace MockApiServer.Services
       return Task.CompletedTask;
     }
 
-    public void SetupExpectation(dynamic testCase)
+    public void SetupExpectation(TestCase testCase)
     {
       var fileName = _getFileNameFromUrl(testCase.HttpMethod, testCase.RequestPath, testCase.QueryString);
-      if (_expectations.ContainsKey(fileName))
-      {
-        _expectations[fileName] = testCase;
-        return;
-      }
-      _expectations.Add(fileName, testCase);
-      _expectationRead.Add(fileName, 0);
+      _setupExpectation(testCase, fileName);
+    }
+    public void SetupExpectation(GraphQlTestCase testCase)
+    {
+      var fileName = _getGraphQlFileName(testCase.OperationName, testCase.Query);
+      _setupExpectation(testCase, fileName);
     }
 
     public int Expect(string method, in int count, string path, string queryString = null)
@@ -180,7 +179,7 @@ namespace MockApiServer.Services
 
       return $"{httpMethod.ToLower()}_{url.ToLower().Replace('/', '_')}{queryStringHash}.json";
     }
-    private async Task<string> _razorResult(string filePath, dynamic razorModel)
+    private async Task<string> _razorResult(string filePath, RazorModel razorModel)
     {
       var engine = new RazorLightEngineBuilder()
         .UseProject(new EmbeddedRazorProject(Assembly.GetExecutingAssembly()))
@@ -190,10 +189,8 @@ namespace MockApiServer.Services
       var templateKey = Path.GetFileNameWithoutExtension(filePath);
       var template = File.ReadAllText(filePath);
 
-      if (razorModel == null)
-      {
-        razorModel = new ExpandoObject();
-      }
+      if(razorModel==null)
+        razorModel =new RazorModel();
       razorModel.TemplateName = templateKey;
 
       return await engine.CompileRenderStringAsync(templateKey, template, razorModel, (ExpandoObject)null);
@@ -239,6 +236,17 @@ namespace MockApiServer.Services
     private string _getMinifiedJsonString(string jsonString)
     {
       return Regex.Replace(jsonString, @"\s+", "");
+    }
+    private void _setupExpectation(dynamic testCase, string fileName)
+    {
+      if (_expectations.ContainsKey(fileName))
+      {
+        _expectations[fileName] = testCase;
+        return;
+      }
+
+      _expectations.Add(fileName, testCase);
+      _expectationRead.Add(fileName, 0);
     }
     #endregion
   }
