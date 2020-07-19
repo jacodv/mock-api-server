@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -219,8 +220,10 @@ namespace MockApiServer.Services
     }
     private string _getGraphQlFileName(string operationName, string query)
     {
+      var minifiedQuery = _getMinifiedJsonString(query);
+
       var queryHash = BitConverter
-        .ToString(_md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(_getMinifiedJsonString(query))))
+        .ToString(_md5CryptoServiceProvider.ComputeHash(Encoding.UTF8.GetBytes(minifiedQuery)))
         .Replace("-", string.Empty);
       return $"{operationName.ToLower()}_{queryHash}.graphql";
     }
@@ -235,12 +238,7 @@ namespace MockApiServer.Services
     }
     private string _getMinifiedJsonString(string jsonString)
     {
-      var obj = JsonConvert.DeserializeObject(jsonString);
-      return _getMinifiedJsonString(obj);
-    }
-    private string _getMinifiedJsonString(object obj)
-    {
-      return JsonConvert.SerializeObject(obj, Formatting.None);
+      return Regex.Replace(jsonString, @"\s+", "");
     }
     #endregion
   }

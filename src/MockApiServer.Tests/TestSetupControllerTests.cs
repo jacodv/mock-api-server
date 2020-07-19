@@ -322,7 +322,7 @@ namespace MockApiServer.Tests
 
 
       // DELETE
-      var deleteResponse = await _fixture.Client.DeleteAsync($"{TestControllerPath}/DeleteGraphQl?fileName={HttpUtility.UrlEncode(fileName)}");
+      var deleteResponse = await _fixture.Client.DeleteAsync($"{TestControllerPath}/GraphQlDelete?fileName={HttpUtility.UrlEncode(fileName)}");
       deleteResponse.EnsureSuccessStatusCode();
     }
 
