@@ -2,3 +2,5 @@ obj
 .vs
 bin
 /src/MockApiServer.v3.ncrunchsolution.user
+/src/MockApiServer/Properties/PublishProfiles/registry.hub.docker.com_jdevil.pubxml
+/src/MockApiServer/Properties/PublishProfiles/registry.hub.docker.com_jdevil.pubxml.user
