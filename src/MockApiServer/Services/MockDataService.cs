@@ -67,7 +67,12 @@ namespace MockApiServer.Services
       if (testCase.IsRazorFile)
         filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{Path.GetFileNameWithoutExtension(fileName)}.razor");
 
-      await File.WriteAllTextAsync(filePath, JsonConvert.SerializeObject(testCase.ExpectedResult), CancellationToken.None);
+      await File.WriteAllTextAsync(
+        filePath,
+        (testCase.IsRazorFile && testCase.ExpectedResult is string)?
+          testCase.ExpectedResult: // Razor files will post string and not json
+          JsonConvert.SerializeObject(testCase.ExpectedResult), 
+        CancellationToken.None);
     }
 
     public async Task WriteFile(GraphQlTestCase testCase)
