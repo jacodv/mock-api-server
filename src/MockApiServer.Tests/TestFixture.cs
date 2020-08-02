@@ -131,6 +131,14 @@ namespace MockApiServer.Tests
       _testOutputHelper.WriteLine($"Success Result:\n{content}");
       return result;
     }
+    public async Task<byte[]> ValidateSuccessFile(HttpResponseMessage response)
+    {
+      response.EnsureSuccessStatusCode();
+      await using var fileData = new MemoryStream();
+      await response.Content.CopyToAsync(fileData);
+
+      return fileData.ToArray();
+    }
     public HttpContent GetHttpContent(dynamic model)
     {
       return new StringContent(
