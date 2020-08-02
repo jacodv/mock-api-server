@@ -64,8 +64,14 @@ namespace MockApiServer.Services
       var fileName = _getFileNameFromUrl(testCase.HttpMethod, testCase.RequestPath, testCase.QueryString);
       var filePath = _getFilePath(fileName);
 
+      var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
       if (testCase.IsRazorFile)
-        filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{Path.GetFileNameWithoutExtension(fileName)}.razor");
+        filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{fileNameWithoutExtension}.razor");
+      else if (testCase.IsStaticContent)
+      {
+        if(!fileName.EndsWith(testCase.StaticContentExtension))
+          filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{Path.ChangeExtension(fileNameWithoutExtension, testCase.StaticContentExtension)}");
+      }
 
       await File.WriteAllTextAsync(
         filePath,
@@ -87,9 +93,7 @@ namespace MockApiServer.Services
     {
       var workingDirectory = new DirectoryInfo(_getWorkingDirectory());
       return Task.FromResult(workingDirectory
-        .GetFiles("*.json", SearchOption.TopDirectoryOnly)
-        .Union(workingDirectory.GetFiles("*.razor", SearchOption.TopDirectoryOnly))
-        .Union(workingDirectory.GetFiles("*.graphql", SearchOption.TopDirectoryOnly))
+        .GetFiles("*.*", SearchOption.TopDirectoryOnly)
         .Select(s => s.Name));
     }
 

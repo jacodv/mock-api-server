@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -129,6 +132,51 @@ namespace MockApiServer.Tests
     }
 
     [Fact]
+    public async Task PostPut_GivenStaticContentWithoutExtension_ShouldFail()
+    {
+      // Arrange
+      const string testControllerPath = "/api/TestSetup";
+      var testCase = new TestCase()
+      {
+        HttpMethod = "POST",
+        RequestPath = "api/somePath",
+        IsStaticContent = true,
+        ExpectedResult = "<p/>"
+      };
+
+      // Act Assert Post
+      var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
+      invalidResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, "Post expected bad request for invalid http method");
+
+      // Act Assert Put
+      invalidResponse = await _fixture.Client.PutAsync(testControllerPath, _fixture.GetHttpContent(testCase));
+      invalidResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, "Post expected bad request for invalid http method");
+    }
+    [Fact]
+    public async Task PostPut_GivenStaticContentWithInvalidBinary_ShouldFail()
+    {
+      // Arrange
+      const string testControllerPath = "/api/TestSetup";
+      var testCase = new TestCase()
+      {
+        HttpMethod = "POST",
+        RequestPath = "api/somePath",
+        ExpectedResult = "<p/>",
+        IsStaticContent = true,
+        StaticContentExtension = "gif",
+        IsBinary = true,
+      };
+
+      // Act Assert Post
+      var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
+      invalidResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, "Post expected bad request for invalid http method");
+
+      // Act Assert Put
+      invalidResponse = await _fixture.Client.PutAsync(testControllerPath, _fixture.GetHttpContent(testCase));
+      invalidResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, "Post expected bad request for invalid http method");
+    }
+
+    [Fact]
     public async Task CRUD_GivenValidInput_ShouldCreateReadUpdateDelete()
     {
       // Arrange
@@ -166,6 +214,85 @@ namespace MockApiServer.Tests
       updateResponse.EnsureSuccessStatusCode();
       // UPDATE READ
       await _validateReadItemAndAllItems(TestControllerPath, itemUrl);
+
+      // DELETE
+      var deleteResponse = await _fixture.Client.DeleteAsync(itemUrl);
+      deleteResponse.EnsureSuccessStatusCode();
+      // DELETE READ
+      var readAfterDelete = await _fixture.Client.GetAsync(itemUrl);
+      readAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task CRUD_GivenValidStaticHtmlContent_ShouldCreateReadUpdateDelete()
+    {
+      // Arrange
+      const string requestPath = "api/sample.html";
+      var httpMethod = "GET";
+      var content = "<p>Static Html Content</p>";
+      var expectedFileName = "get_api_sample.html";
+      var testCase = new TestCase()
+      {
+        ExpectedResult = content,
+        HttpMethod = httpMethod,
+        RequestPath = requestPath,
+        IsStaticContent =true,
+        IsBinary = false,
+        StaticContentExtension = "html"
+      };
+
+      var itemUrl = $"{TestControllerPath}/{httpMethod}?path={HttpUtility.UrlEncode(requestPath)}";
+
+      // Act and Assert
+      // CREATE
+      var createResponse = await _fixture.Client.PostAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
+      createResponse.EnsureSuccessStatusCode();
+      // CREATE READ
+      await _validateReadItemAndAllItems<string>(TestControllerPath, itemUrl, expectedFileName);
+
+      // UPDATE
+      var updatedModel = "<p>Updated Html</p>";
+      testCase.ExpectedResult = updatedModel;
+      var updateResponse = await _fixture.Client.PutAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
+      updateResponse.EnsureSuccessStatusCode();
+      // UPDATE READ
+      await _validateReadItemAndAllItems<string>(TestControllerPath, itemUrl, expectedFileName);
+
+      // DELETE
+      var deleteResponse = await _fixture.Client.DeleteAsync(itemUrl);
+      deleteResponse.EnsureSuccessStatusCode();
+      // DELETE READ
+      var readAfterDelete = await _fixture.Client.GetAsync(itemUrl);
+      readAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task CRD_GivenValidStaticHtmlContent_ShouldCreateReadUpdateDelete()
+    {
+      // Arrange
+      const string requestPath = "api/loader.gif";
+      var httpMethod = "GET";
+      var loaderGifData = File.ReadAllBytes("./Resources/loader.gif");
+      var content = Convert.ToBase64String(loaderGifData);
+      var expectedFileName = "get_api_loader.gif";
+      var testCase = new TestCase()
+      {
+        ExpectedResult = content,
+        HttpMethod = httpMethod,
+        RequestPath = requestPath,
+        IsStaticContent = true,
+        IsBinary = true,
+        StaticContentExtension = "gif"
+      };
+
+      var itemUrl = $"{TestControllerPath}/{httpMethod}?path={HttpUtility.UrlEncode(requestPath)}";
+
+      // Act and Assert
+      // CREATE
+      var createResponse = await _fixture.Client.PostAsync(TestControllerPath, _fixture.GetHttpContent(testCase));
+      createResponse.EnsureSuccessStatusCode();
+      // CREATE READ
+      await _validateFileDataAndAllItems(TestControllerPath, itemUrl, expectedFileName);
 
       // DELETE
       var deleteResponse = await _fixture.Client.DeleteAsync(itemUrl);
@@ -331,9 +458,21 @@ namespace MockApiServer.Tests
     #region Private
     private async Task _validateReadItemAndAllItems(string testControllerPath, string getItemUrl, string fileName = "get_api_tests")
     {
+      await _validateReadItemAndAllItems<SampleModel>(testControllerPath, getItemUrl, fileName);
+    }
+    private async Task _validateReadItemAndAllItems<T>(string testControllerPath, string getItemUrl, string fileName)
+    {
       var response = await _fixture.Client.GetAsync(getItemUrl);
-      await _fixture.ValidateSuccessResponse<SampleModel>(response);
+      await _fixture.ValidateSuccessResponse<T>(response);
+      await _validateAllItems(testControllerPath, fileName);
+    }
+    private async Task _validateFileDataAndAllItems(string testControllerPath, string getItemUrl, string fileName, byte[] resultsToCompare = null)
+    {
+      var response = await _fixture.Client.GetAsync(getItemUrl);
 
+      var fileData = await _fixture.ValidateSuccessFile(response);
+      if (resultsToCompare != null) 
+        fileData.Should().BeSameAs(resultsToCompare);
       await _validateAllItems(testControllerPath, fileName);
     }
     private async Task<string> _validateAllItems(string testControllerPath, string fileName)
