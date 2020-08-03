@@ -40,6 +40,6 @@ jobs:
         echo ${{github.ref}}  
     
     - name: If-develop, publish docker
-      if: github.ref=='develop'
+      if: (contains(github.ref, 'develop'))
       run: |
         echo If-is-the-develop-branch
