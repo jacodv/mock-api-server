@@ -43,8 +43,8 @@ jobs:
       if: (contains(github.ref, 'develop'))            
       uses: docker/build-push-action@v1
       with:
+        dockerfile: ${{env.working-directory}}/MockApiServer/Dockerfile
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
         repository: jdevil/mock-api-server
-        tag_with_ref: true
-        working-directory: ${{env.working-directory}}/MockApiServer
+        tag: latest
