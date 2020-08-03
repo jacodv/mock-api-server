@@ -40,10 +40,11 @@ jobs:
         echo ${{github.ref}}  
     
     - name: If-develop, publish docker
-      if: (contains(github.ref, 'develop'))
+      if: (contains(github.ref, 'develop'))            
       uses: docker/build-push-action@v1
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
         repository: jdevil/mock-api-server
-        tag_with_ref: true
+        tag_with_ref: true,
+        working-directory: ${{env.working-directory}}/MockApiServer
