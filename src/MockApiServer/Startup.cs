@@ -2,6 +2,7 @@ using System.IO;
 using System.Reflection;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -59,16 +60,9 @@ namespace MockApiServer
     }
     private static void UseCorsPolicy(IApplicationBuilder app)
     {
-      //app.UseSerilogRequestLogging();
       app.UseCors(policy =>
       {
-
-        policy.WithOrigins("http://localhost").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
-        policy.WithOrigins("http://localhost:5001").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
-        policy.WithOrigins("http://localhost:5000").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
-        policy.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
-        policy.WithOrigins("http://localhost:3000/").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
-        policy.WithOrigins("http://localhost:3000/api").AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowedToAllowWildcardSubdomains();
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
         policy.Build();
       });
     }
