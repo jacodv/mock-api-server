@@ -41,5 +41,9 @@ jobs:
     
     - name: If-develop, publish docker
       if: (contains(github.ref, 'develop'))
-      run: |
-        echo If-is-the-develop-branch
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+        repository: jdevil/mock-api-server
+        tag_with_ref: true
