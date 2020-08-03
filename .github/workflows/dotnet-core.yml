@@ -36,6 +36,6 @@ jobs:
       working-directory: ${{env.working-directory}}
     
     - name: If-develop, publish docker
-      if: github.ref=="develop"
+      if: github.ref=='develop'
       run: |
-        echo "If is the develop branch"
+        echo If-is-the-develop-branch
