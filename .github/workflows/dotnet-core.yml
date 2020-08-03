@@ -34,6 +34,10 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
       working-directory: ${{env.working-directory}}
+      
+    - name: Echo the branch
+      run: |
+        echo ${{github.ref}}  
     
     - name: If-develop, publish docker
       if: github.ref=='develop'
