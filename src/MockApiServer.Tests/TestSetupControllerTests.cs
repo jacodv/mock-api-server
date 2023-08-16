@@ -73,12 +73,7 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new TestCase()
-      {
-        HttpMethod = null,
-        RequestPath = "api/somePath",
-        ExpectedResult = new { prop = "prop1" }
-      };
+      var testCase = new TestCase(null,"api/somePath",new { prop = "prop1" });
 
       // Act Assert Post
       var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
@@ -94,12 +89,7 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new TestCase()
-      {
-        HttpMethod = "POST",
-        RequestPath = null,
-        ExpectedResult = new { prop = "prop1" }
-      };
+      var testCase = new TestCase("POST", null, new { prop = "prop1" });
 
       // Act Assert Post
       var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
@@ -115,12 +105,7 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new TestCase()
-      {
-        HttpMethod = "POST",
-        RequestPath = "api/somePath",
-        ExpectedResult = null
-      };
+      var testCase = new TestCase("POST", "api/somePath", null);
 
       // Act Assert Post
       var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
@@ -136,12 +121,9 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new TestCase()
+      var testCase = new TestCase("POST","api/somePath", "<p/>")
       {
-        HttpMethod = "POST",
-        RequestPath = "api/somePath",
-        IsStaticContent = true,
-        ExpectedResult = "<p/>"
+        IsStaticContent = true
       };
 
       // Act Assert Post
@@ -157,11 +139,8 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
-      var testCase = new TestCase()
+      var testCase = new TestCase("POST","api/somePath","<p/>")
       {
-        HttpMethod = "POST",
-        RequestPath = "api/somePath",
-        ExpectedResult = "<p/>",
         IsStaticContent = true,
         StaticContentExtension = "gif",
         IsBinary = true,
@@ -187,12 +166,7 @@ namespace MockApiServer.Tests
         Id = "CrudTestId",
         Name = "CrudTestName"
       };
-      var testCase = new TestCase()
-      {
-        ExpectedResult = newModel,
-        HttpMethod = httpMethod,
-        RequestPath = requestPath
-      };
+      var testCase = new TestCase(httpMethod, requestPath, newModel);
 
       var itemUrl = $"{TestControllerPath}/{httpMethod}?path={HttpUtility.UrlEncode(requestPath)}";
 
@@ -231,11 +205,8 @@ namespace MockApiServer.Tests
       var httpMethod = "GET";
       var content = "<p>Static Html Content</p>";
       var expectedFileName = "get_api_sample.html";
-      var testCase = new TestCase()
+      var testCase = new TestCase(httpMethod, requestPath, content)
       {
-        ExpectedResult = content,
-        HttpMethod = httpMethod,
-        RequestPath = requestPath,
         IsStaticContent =true,
         IsBinary = false,
         StaticContentExtension = "html"
@@ -275,11 +246,8 @@ namespace MockApiServer.Tests
       var loaderGifData = File.ReadAllBytes("./Resources/loader.gif");
       var content = Convert.ToBase64String(loaderGifData);
       var expectedFileName = "get_api_loader.gif";
-      var testCase = new TestCase()
+      var testCase = new TestCase(httpMethod, requestPath,content)
       {
-        ExpectedResult = content,
-        HttpMethod = httpMethod,
-        RequestPath = requestPath,
         IsStaticContent = true,
         IsBinary = true,
         StaticContentExtension = "gif"
@@ -315,11 +283,8 @@ namespace MockApiServer.Tests
         Id = "CrudTestId",
         Name = "CrudTestName"
       };
-      var testCase = new TestCase()
+      var testCase = new TestCase(httpMethod,requestPath,newModel)
       {
-        ExpectedResult = newModel,
-        HttpMethod = httpMethod,
-        RequestPath = requestPath,
         QueryString = queryString
       };
 
@@ -365,11 +330,8 @@ namespace MockApiServer.Tests
         Id = "CrudTestId",
         Name = "CrudTestName"
       };
-      var testCase = new TestCase()
+      var testCase = new TestCase(httpMethod,requestPath,newModel)
       {
-        ExpectedResult = newModel,
-        HttpMethod = httpMethod,
-        RequestPath = requestPath,
         QueryString = queryString,
         IsRazorFile = true
       };
@@ -435,12 +397,7 @@ namespace MockApiServer.Tests
                                   extensions: {}
                                 }";
 
-      var testCase = new GraphQlTestCase()
-      {
-        OperationName = "GetSamples",
-        Query = query,
-        ExpectedResult = JsonConvert.DeserializeObject(result)
-      };
+      var testCase = new GraphQlTestCase(query, "GetSamples", JsonConvert.DeserializeObject(result)!);
 
       // Act and Assert
       // CREATE
