@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -97,6 +99,55 @@ namespace MockApiServer.Tests
       authModel.ExpiresInSeconds.Should().Be(1800);
       var calculatedDiff = authModel.Expires - authModel.Created;
       calculatedDiff.TotalSeconds.Should().Be(authModel.ExpiresInSeconds);
+    }
+
+    [Fact]
+    public async Task Get_ApiRequest_WithExpectedHeader_AndNoHeaderValue_ShouldValidateHeader()
+    {
+      // Arrange
+      const string request = "/api/ValidateHeaderKey";
+      const string headerName = "Authorization";
+      var id=Guid.NewGuid().ToString();
+      var testCase = new TestCase("GET", request, new SampleModel{ Id=id})
+      {
+        ExpectedHeaders = new(){{headerName,null}}
+      };
+
+      var jsonContent = JsonConvert.SerializeObject(testCase);
+      await _fixture.Client.PostAsync("/api/testsetup", new StringContent(jsonContent, MediaTypeHeaderValue.Parse("application/json")));
+
+      // Act
+      _fixture.Client.DefaultRequestHeaders.Add(headerName, "some-value");
+      var response = await _fixture.Client.GetAsync(request);
+
+      // Assert
+      _fixture.Client.DefaultRequestHeaders.Remove(headerName);
+      await _fixture.ValidateSuccessResponse<SampleModel>(response);
+    }
+
+    [Fact]
+    public async Task Get_ApiRequest_WithExpectedHeader_AndHeaderValue_ShouldValidateHeaderKeyAndValue()
+    {
+      // Arrange
+      const string request = "/api/ValidateHeaderKeyAndValue";
+      const string headerName = "Authorization";
+      const string headerValue = "Bearer token";
+      var id=Guid.NewGuid().ToString();
+      var testCase = new TestCase("GET", request, new SampleModel{ Id=id})
+      {
+        ExpectedHeaders = new(){{headerName,headerValue}}
+      };
+
+      var jsonContent = JsonConvert.SerializeObject(testCase);
+      await _fixture.Client.PostAsync("/api/testsetup", new StringContent(jsonContent, MediaTypeHeaderValue.Parse("application/json")));
+
+      // Act
+      _fixture.Client.DefaultRequestHeaders.Add(headerName, headerValue);
+      var response = await _fixture.Client.GetAsync(request);
+
+      // Assert
+      _fixture.Client.DefaultRequestHeaders.Remove(headerName);
+      await _fixture.ValidateSuccessResponse<SampleModel>(response);
     }
   }
 

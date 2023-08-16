@@ -121,15 +121,22 @@ namespace MockApiServer.Tests
     {
       _testOutputHelper = testOutputHelper;
     }
-    public async Task<T> ValidateSuccessResponse<T>(HttpResponseMessage response)
+    public async Task<T?> ValidateSuccessResponse<T>(HttpResponseMessage response)
     {
       var content = await response.Content.ReadAsStringAsync();
-      response.EnsureSuccessStatusCode();
+      try
+      {
+        response.EnsureSuccessStatusCode();
 
-      var result = JsonConvert.DeserializeObject<T>(content);
-      result.Should().NotBeNull();
-      _testOutputHelper.WriteLine($"Success Result:\n{content}");
-      return result;
+        var result = JsonConvert.DeserializeObject<T>(content);
+        result.Should().NotBeNull();
+        _testOutputHelper.WriteLine($"Success Result:\n{content}");
+        return result;
+      }
+      catch (HttpRequestException e)
+      {
+        throw new HttpRequestException($"{e.Message}.  {content}", e);
+      }
     }
     public async Task<byte[]> ValidateSuccessFile(HttpResponseMessage response)
     {

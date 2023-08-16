@@ -1,0 +1,1 @@
+{"ExpectedHeaders":{"Authorization":"Bearer token"},"HttpMethod":"GET","RequestPath":"/api/ValidateHeaderKeyAndValue","ExpectedResult":{"Id":"cab17219-5cbf-4e24-abb4-8c13803957b6","Name":null},"QueryString":null,"IsRazorFile":false,"IsStaticContent":false,"IsBinary":false,"StaticContentExtension":null,"SaveAsTestCase":true}

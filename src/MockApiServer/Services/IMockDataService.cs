@@ -6,7 +6,7 @@ namespace MockApiServer.Services
 {
   public interface IMockDataService
   {
-    Task<string> ReadFile(string httpMethod, string url, string queryString=null, dynamic razorModel=null);
+    Task<(string, TestCase?)> ReadFile(string httpMethod, string url, string queryString=null, dynamic razorModel=null);
     string GetHomeScreen();
     Task WriteFile(TestCase testCase);
     Task WriteFile(GraphQlTestCase testCase);

@@ -36,20 +36,35 @@ namespace MockApiServer.Services
       _expectationRead = new Dictionary<string, int>();
     }
 
-    public async Task<string> ReadFile(string httpMethod, string url, string queryString = null, dynamic razorModel=null)
+    public async Task<(string, TestCase?)> ReadFile(string httpMethod, string url, string? queryString = null, dynamic razorModel=null)
     {
       var fileName = _getFileNameFromUrl(httpMethod, url, queryString);
 
       var expectation = _getExpectation(fileName);
       if (expectation != null)
-        return expectation;
+        return (expectation, null);
         
       var filePath = _resolveFileNameFromRequest(httpMethod, url, queryString);
 
-      if (Path.GetExtension(filePath) == ".razor")
-        return await _razorResult(filePath, razorModel);
+      switch (Path.GetExtension(filePath))
+      {
+        case ".razor":
+          return (await _razorResult(filePath, razorModel),null);
+        case ".testcase":
+          return await _getResponseAndTestCase(filePath);
+      }
 
-      return await File.ReadAllTextAsync(filePath);
+      return (await File.ReadAllTextAsync(filePath),null);
+    }
+
+    private async Task<(string, TestCase)> _getResponseAndTestCase(string filePath, dynamic? razorModel=null)
+    {
+      var testCase = JsonConvert.DeserializeObject<TestCase>(await File.ReadAllTextAsync(filePath));
+      if (!testCase!.IsRazorFile) 
+        return (testCase.ExpectedResult.ToString(), testCase);
+      
+      var razorResult = await _razorResult(filePath, razorModel, testCase.ExpectedResult.ToString());
+      return (razorResult, testCase);
     }
 
     public string GetHomeScreen()
@@ -65,7 +80,9 @@ namespace MockApiServer.Services
       var filePath = _getFilePath(fileName);
 
       var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-      if (testCase.IsRazorFile)
+      if(testCase.SaveAsTestCase)
+        filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{fileNameWithoutExtension}.testcase");
+      else if (testCase.IsRazorFile)
         filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{fileNameWithoutExtension}.razor");
       else if (testCase.IsStaticContent)
       {
@@ -73,11 +90,15 @@ namespace MockApiServer.Services
           filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{Path.ChangeExtension(fileNameWithoutExtension, testCase.StaticContentExtension)}");
       }
 
+      var content = testCase.SaveAsTestCase?
+        JsonConvert.SerializeObject(testCase):
+          testCase.IsRazorFile ? 
+            testCase.ExpectedResult : // Razor files will post string and not json
+            JsonConvert.SerializeObject(testCase.ExpectedResult);
+
       await File.WriteAllTextAsync(
         filePath,
-        (testCase.IsRazorFile && testCase.ExpectedResult is string)?
-          testCase.ExpectedResult: // Razor files will post string and not json
-          JsonConvert.SerializeObject(testCase.ExpectedResult), 
+        content,
         CancellationToken.None);
     }
 
@@ -188,7 +209,7 @@ namespace MockApiServer.Services
 
       return $"{httpMethod.ToLower()}_{url.ToLower().Replace('/', '_')}{queryStringHash}.json";
     }
-    private async Task<string> _razorResult(string filePath, RazorModel razorModel)
+    private async Task<string> _razorResult(string filePath, RazorModel? razorModel, string? razorContent=null)
     {
       var engine = new RazorLightEngineBuilder()
         .UseProject(new EmbeddedRazorProject(Assembly.GetExecutingAssembly()))
@@ -196,13 +217,15 @@ namespace MockApiServer.Services
         .Build();
 
       var templateKey = Path.GetFileNameWithoutExtension(filePath);
-      var template = File.ReadAllText(filePath);
+      var template = razorContent?? await File.ReadAllTextAsync(filePath);
 
-      if(razorModel==null)
-        razorModel =new RazorModel();
+      razorModel ??= new RazorModel();
       razorModel.TemplateName = templateKey;
 
+      // ReSharper disable once RedundantCast
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
       return await engine.CompileRenderStringAsync(templateKey, template, razorModel, (ExpandoObject)null);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
     }
     private string _resolveFileNameFromRequest(string httpMethod, string url, string queryString)
     {
@@ -217,7 +240,7 @@ namespace MockApiServer.Services
         throw new InvalidOperationException($"More than one result found: {string.Join(',', files.Select(x => x.Name))}");
       return files.First().FullName;
     }
-    private string _getExpectation(string fileName)
+    private string? _getExpectation(string fileName)
     {
       if (!_expectations.ContainsKey(fileName))
         return null;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,22 @@ namespace MockApiServer.Controllers
     {
       try
       {
-        return new OkObjectResult(JsonConvert.DeserializeObject(value: await _mockDataService.ReadFile(httpMethod, path, queryString, razorModel)));
+        var (value, testCase) = await _mockDataService.ReadFile(httpMethod, path, queryString, razorModel);
+
+        if (testCase == null || !testCase.ExpectedHeaders.Any())
+          return new OkObjectResult(JsonConvert.DeserializeObject(value: value));
+        
+        foreach (var testCaseExpectedHeader in testCase.ExpectedHeaders)
+        {
+          if(!Request.Headers.ContainsKey(testCaseExpectedHeader.Key))
+            return BadRequest($"Expected header {testCaseExpectedHeader.Key} not found in request");
+          if (testCaseExpectedHeader.Value != null &&
+              !Request.Headers[testCaseExpectedHeader.Key].Contains(testCaseExpectedHeader.Value))
+            return BadRequest(
+              $"Expected header {testCaseExpectedHeader.Key} with value {testCaseExpectedHeader.Value} not found in request");
+        }
+
+        return new OkObjectResult(JsonConvert.DeserializeObject(value: value));
       }
       catch (FileNotFoundException e)
       {

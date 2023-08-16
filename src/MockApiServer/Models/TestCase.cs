@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using FluentValidation;
 
 namespace MockApiServer.Models
@@ -14,7 +15,9 @@ namespace MockApiServer.Models
     public bool IsStaticContent { get; set; }
     public bool IsBinary { get; set; }
     public string? StaticContentExtension { get; set; }
-    public Dictionary<string, string?> RequiredHeaders = new();
+    public Dictionary<string, string?> ExpectedHeaders = new();
+
+    public bool SaveAsTestCase => ExpectedHeaders.Any();
 
     public TestCase(string httpMethod, string requestPath, dynamic expectedResult)
     {
