@@ -5,3 +5,5 @@ bin
 /src/MockApiServer/Properties/PublishProfiles/registry.hub.docker.com_jdevil.pubxml
 /src/MockApiServer/Properties/PublishProfiles/registry.hub.docker.com_jdevil.pubxml.user
 /src/Samples/mock-api-app/node_modules
+*.ncrunchsolution
+*.user
