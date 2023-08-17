@@ -17,6 +17,16 @@ Name: "SampleName"
 curl https://localhost:5001/api/sample
 ```
 
+#### GET: `/api/forbidden`
+This is a sample GET request that returns a `403-Forbidden` response.  The response content is the following:
+```
+"This request was forbidden"
+```
+
+```curl
+curl https://localhost:5001/api/forbidden
+```
+
 #### OAuth Login POST: `/auth` - *(x-www-form-urlencoded)*
 This is a sample POST typically used for OAuth login:
 ```json
