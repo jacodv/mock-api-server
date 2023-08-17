@@ -29,14 +29,15 @@ namespace MockApiServer.Controllers
         if (testCase == null || !testCase.ExpectedHeaders.Any())
           return new OkObjectResult(JsonConvert.DeserializeObject(value: value));
         
+        var requestHeaderNames = Request.Headers.Keys;
+
         foreach (var testCaseExpectedHeader in testCase.ExpectedHeaders)
         {
           if(!Request.Headers.ContainsKey(testCaseExpectedHeader.Key))
-            return BadRequest($"Expected header {testCaseExpectedHeader.Key} not found in request");
+            return BadRequest($"Expected header {testCaseExpectedHeader.Key} not found in request [{string.Join(',',requestHeaderNames)}]");
           if (testCaseExpectedHeader.Value != null &&
               !Request.Headers[testCaseExpectedHeader.Key].Contains(testCaseExpectedHeader.Value))
-            return BadRequest(
-              $"Expected header {testCaseExpectedHeader.Key} with value {testCaseExpectedHeader.Value} not found in request");
+            return BadRequest($"Expected header {testCaseExpectedHeader.Key} with value {testCaseExpectedHeader.Value} not found in request");
         }
 
         return new OkObjectResult(JsonConvert.DeserializeObject(value: value));
