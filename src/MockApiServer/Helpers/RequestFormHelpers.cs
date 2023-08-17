@@ -12,7 +12,7 @@ namespace MockApiServer.Helpers
         .Keys
         .ToDictionary<string, string, string>(
           key => key, 
-          key => form[key]);
+          key => form[key]!);
     }
   }
 }

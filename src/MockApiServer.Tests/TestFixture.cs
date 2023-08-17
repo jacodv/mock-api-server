@@ -27,7 +27,7 @@ namespace MockApiServer.Tests
   public class TestFixture<TStartup> : IDisposable
   {
     private readonly TestServer _testServer;
-    private ITestOutputHelper _testOutputHelper;
+    private ITestOutputHelper? _testOutputHelper;
 
     public static string GetProjectPath(string projectRelativePath, Assembly startupAssembly)
     {
@@ -41,14 +41,14 @@ namespace MockApiServer.Tests
       {
         directoryInfo = directoryInfo.Parent;
 
-        var projectDirectoryInfo = new DirectoryInfo(Path.Combine(directoryInfo.FullName, projectRelativePath));
+        var projectDirectoryInfo = new DirectoryInfo(Path.Combine(directoryInfo!.FullName, projectRelativePath));
 
         if (projectDirectoryInfo.Exists)
         {
-          var fileName = Path.Combine(projectDirectoryInfo.FullName, projectName, $"{projectName}.csproj");
+          var fileName = Path.Combine(projectDirectoryInfo.FullName, projectName!, $"{projectName}.csproj");
 
           if (new FileInfo(fileName).Exists)
-            return Path.Combine(projectDirectoryInfo.FullName, projectName);
+            return Path.Combine(projectDirectoryInfo.FullName, projectName!);
         }
       }
       while (directoryInfo.Parent != null);
@@ -131,7 +131,7 @@ namespace MockApiServer.Tests
 
         var result = JsonConvert.DeserializeObject<T>(content);
         result.Should().NotBeNull();
-        _testOutputHelper.WriteLine($"Success Result:\n{content}");
+        _testOutputHelper!.WriteLine($"Success Result:\n{content}");
         return result;
       }
       catch (HttpRequestException e)
@@ -164,14 +164,21 @@ namespace MockApiServer.Tests
         return graphQlResponse.Data;
 
       foreach (var err in graphQlResponse.Errors)
-        _testOutputHelper.WriteLine("ERROR: " + JsonConvert.SerializeObject(err));
+        _testOutputHelper!.WriteLine("ERROR: " + JsonConvert.SerializeObject(err));
       throw new InvalidOperationException(graphQlResponse.Errors.First().Message);
     }
-
-    public void Dispose()
+    protected virtual void Dispose(bool disposing)
     {
+      if (!disposing) 
+        return;
+      
       Client.Dispose();
       _testServer.Dispose();
+    }
+    public void Dispose()
+    {
+      Dispose(true);
+      GC.SuppressFinalize(this);
     }
   }
 }

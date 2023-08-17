@@ -57,7 +57,7 @@ namespace MockApiServer.Controllers
     {
       try
       {
-        var graphQlRequest = JsonConvert.DeserializeObject<GraphQlRequest>(razorModel.RequestBody);
+        var graphQlRequest = JsonConvert.DeserializeObject<GraphQlRequest>(razorModel.RequestBody!);
         if(graphQlRequest==null || string.IsNullOrEmpty(graphQlRequest.query))
           throw new InvalidOperationException($"Invalid GraphQLRequest:\n{razorModel.RequestBody}");
         var result = await _mockDataService.ReadGraphQlFile(graphQlRequest);

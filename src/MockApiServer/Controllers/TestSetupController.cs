@@ -29,10 +29,18 @@ namespace MockApiServer.Controllers
     [HttpGet]
     public async Task<IEnumerable<string>> Get()
     {
-      var result = new List<string>();
-      result.AddRange(_mockDataService.GetExpectationKeys());
-      result.AddRange(await _mockDataService.GetPersistedFileNames());
-      return result;
+      try
+      {
+        var result = new List<string>();
+        result.AddRange(_mockDataService.GetExpectationKeys());
+        result.AddRange(await _mockDataService.GetPersistedFileNames());
+        return result;
+      }
+      catch (Exception e)
+      {
+        _logger.LogError(e, $"Error in TestSetupController.Get. {e.Message}");
+        throw;
+      }
     }
 
     [HttpGet("{method}")]

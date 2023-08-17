@@ -17,15 +17,12 @@ namespace MockApiServer.Tests
   public class TestApiSampleResponses : IClassFixture<TestFixture<Startup>>
   {
     private readonly TestFixture<Startup> _fixture;
-    private readonly ITestOutputHelper _testOutputHelper;
 
     public TestApiSampleResponses(
       TestFixture<Startup> fixture,
       ITestOutputHelper testOutputHelper)
     {
       _fixture = fixture;
-      _testOutputHelper = testOutputHelper;
-
       fixture.Init(testOutputHelper);
     }
 
@@ -76,12 +73,12 @@ namespace MockApiServer.Tests
       const string request = "/auth";
       const string userName = "TestUser";
 
-      List<KeyValuePair<string,string>> authItems=new List<KeyValuePair<string, string>>()
+      var authItems=new List<KeyValuePair<string, string>>()
       {
-        new KeyValuePair<string, string>("username", userName),
-        new KeyValuePair<string, string>("password", "SomeSecurePassword"),
-        new KeyValuePair<string, string>("grant_type", "password"),
-        new KeyValuePair<string, string>("client_id", "test-client-id")
+        new("username", userName),
+        new("password", "SomeSecurePassword"),
+        new("grant_type", "password"),
+        new("client_id", "test-client-id")
       };
       var authData = new FormUrlEncodedContent(authItems);
       var requestMessage = new HttpRequestMessage(HttpMethod.Post, new Uri(request, UriKind.Relative))
@@ -94,7 +91,7 @@ namespace MockApiServer.Tests
 
       // Assert
       var authModel = await _fixture.ValidateSuccessResponse<AuthModel>(authResponse);
-      authModel.UserName.Should().Be(userName);
+      authModel!.UserName.Should().Be(userName);
       authModel.Token.Should().NotBeNullOrEmpty();
       authModel.ExpiresInSeconds.Should().Be(1800);
       var calculatedDiff = authModel.Expires - authModel.Created;
