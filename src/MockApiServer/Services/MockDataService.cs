@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Markdig;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using MockApiServer.Models;
@@ -25,6 +26,7 @@ namespace MockApiServer.Services
     private readonly MD5 _md5CryptoServiceProvider;
     private readonly Dictionary<string, dynamic> _expectations;
     private readonly Dictionary<string, int> _expectationRead;
+    private readonly MarkdownPipeline _pipeline;
 
     public MockDataService(IConfiguration configuration, IWebHostEnvironment env)
     {
@@ -34,6 +36,28 @@ namespace MockApiServer.Services
       _md5CryptoServiceProvider = MD5.Create();
       _expectations = new Dictionary<string, dynamic>();
       _expectationRead = new Dictionary<string, int>();
+
+      _pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .UseEmphasisExtras()
+        .UsePipeTables()
+        .UseGridTables()
+        .UseFooters()
+        .UseFootnotes()
+        .UseCitations()
+        //.UseAutoLinks() // URLs are parsed into anchors
+        //.UseAutoIdentifiers(AutoIdentifierOptions.GitHub) // Headers get id="name" 
+        .UseAbbreviations()
+        .UseYamlFrontMatter()
+        .UseEmojiAndSmiley(true)
+        .UseMediaLinks()
+        .UseListExtras()
+        .UseFigures()
+        .UseTaskLists()
+        .UseCustomContainers()
+        .UseGenericAttributes()
+        .UseSyntaxHighlighting()
+        .Build();
     }
 
     public async Task<(string, TestCase?)> ReadFile(string httpMethod, string url, string? queryString = null, dynamic? razorModel=null)
@@ -54,7 +78,7 @@ namespace MockApiServer.Services
       };
     }
 
-    private async Task<(string, TestCase)> _getResponseAndTestCase(string filePath, dynamic? razorModel=null)
+    private static async Task<(string, TestCase)> _getResponseAndTestCase(string filePath, dynamic? razorModel=null)
     {
       var testCase = JsonConvert.DeserializeObject<TestCase>(await File.ReadAllTextAsync(filePath));
       if (!testCase!.IsRazorFile) 
@@ -66,9 +90,11 @@ namespace MockApiServer.Services
 
     public string GetHomeScreen()
     {
-      return File.ReadAllText(string.IsNullOrEmpty(_env.WebRootPath) ?
-        Path.Combine(Assembly.GetExecutingAssembly().Location, "index.html") :
-        Path.Combine(_env.WebRootPath, "index.html"));
+      var markdown = File.ReadAllText(string.IsNullOrEmpty(_env.WebRootPath) ?
+        Path.Combine(Assembly.GetExecutingAssembly().Location, "index.md") :
+        Path.Combine(_env.WebRootPath, "index.md"));
+
+      return Markdown.ToHtml(markdown, _pipeline);
     }
 
     public async Task WriteFile(TestCase testCase)
