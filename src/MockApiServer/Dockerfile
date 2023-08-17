@@ -7,10 +7,8 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["MockApiServer/MockApiServer.csproj", "MockApiServer/"]
-RUN dotnet restore "MockApiServer/MockApiServer.csproj"
 COPY . .
-WORKDIR "/src/MockApiServer"
+RUN dotnet restore "MockApiServer.csproj"
 RUN dotnet build "MockApiServer.csproj" -c Release -o /app/build
 
 FROM build AS publish
