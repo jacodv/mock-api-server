@@ -7,6 +7,7 @@
     <UserSecretsId>d6d37eb7-c2bd-4ff9-b59f-bb5c91e8d1d7</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn),CA2254</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

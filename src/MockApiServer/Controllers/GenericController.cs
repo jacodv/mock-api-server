@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -11,41 +10,54 @@ using MockApiServer.Services;
 
 namespace MockApiServer.Controllers
 {
+  /// <summary>
+  /// This controller is used to handle all the requests that are not handled by any other controller.  It serves are a catch all.
+  /// </summary>
   [ApiController]
   [Route("{*url}")]
   public class GenericController : MockControllerBase<GenericController>
   {
-    private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly IMockDataService _mockDataService;
     private readonly ILogger<GenericController> _logger;
 
-    public GenericController(
-      IWebHostEnvironment webHostEnvironment, 
-      IMockDataService mockDataService, ILogger<GenericController> logger):
+    public GenericController(IMockDataService mockDataService, ILogger<GenericController> logger):
       base(logger, mockDataService)
     {
-      _webHostEnvironment = webHostEnvironment;
       _mockDataService = mockDataService;
       _logger = logger;
     }
 
+    /// <summary>
+    /// Accepts all requests and returns a valid response of the path is matched in a setup.
+    /// </summary>
+    /// <returns><see cref="IActionResult"/>Content as defined in the <see cref="Models.TestCase"/></returns>
     [HttpGet]
     [HttpPost]
     [HttpPut]
     [HttpDelete]
+    // ReSharper disable once RouteTemplates.MethodMissingRouteParameters
     public async Task<IActionResult> All()
     {
-      return await GetResponseFromFile();
+      try
+      {
+        return await _getResponseFromFile();
+      }
+      catch (Exception e)
+      {
+        _logger.LogError(e, "Error in GenericController.All");
+        throw;
+      }
     }
 
-    private async Task<IActionResult> GetResponseFromFile()
+    #region Private
+    private async Task<IActionResult> _getResponseFromFile()
     {
       string path = Request.Path;
       var method = Request.Method;
       path.ReplaceDoubleSlashes();
 
       if (path=="/")
-        return HomeScreen();
+        return _getHomeScreen();
 
       var razorModel = new Models.RazorModel();
       try
@@ -65,7 +77,7 @@ namespace MockApiServer.Controllers
         return await GetGraphQlResult(razorModel);
       return await GetExpectedResult(method, path, Request.QueryString.HasValue?Request.QueryString.Value:null, razorModel);
     }
-    private IActionResult HomeScreen()
+    private IActionResult _getHomeScreen()
     {
       var homeScreen = _mockDataService.GetHomeScreen();
       return Content(homeScreen, "text/html", Encoding.UTF8);
@@ -82,5 +94,6 @@ namespace MockApiServer.Controllers
 
       return content;
     }
+    #endregion
   }
 }
