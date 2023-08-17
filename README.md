@@ -22,7 +22,7 @@ Execute ```https://localhost:5001/api/sample``` to test the with a provided samp
 ### [Postman collection](./src/Samples/PostMan/Mock-Api-Server.postman_collection.json)
 Located in ```src/Samples/PostMan/Mock-Api-Server.postman_collection.json```
 
-![](2020-07-19-19-12-11.png)
+![](repo_assets/img/2020-07-19-19-12-11.png)
 
 # TODO
  - Expectations Samples (Setup, Execute and Verify calls)
