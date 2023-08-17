@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -32,15 +33,11 @@ namespace MockApiServer.Tests
       const string request = "api/ExpectOneTest";
       const string method = "POST";
       const int expectedCount = 1;
-      var testCase = new TestCase(){
-        RequestPath = request,
-        HttpMethod = method,
-        ExpectedResult = new
-        {
-          Field1 = "field1",
-          Field2 = "field2"
-        }
-      };
+      var testCase = new TestCase(method, request, new
+      {
+        Field1 = "field1",
+        Field2 = "field2"
+      });
 
       // Act Setup
       var setupResponse = await _fixture.Client.PostAsync(
@@ -55,9 +52,20 @@ namespace MockApiServer.Tests
       testResponse.EnsureSuccessStatusCode();
 
       // Assert
-      var verifyResponse = await _fixture.Client.GetAsync(
-        $"{SetupControllerPath}/Expect/{expectedCount}/{method}?path={request}&queryString=");
-      verifyResponse.EnsureSuccessStatusCode();
+      //"/api/TestSetup/Expect/1/POST?path=api/ExpectOneTest&queryString="
+      var requestUri = $"{SetupControllerPath}/Expect/{expectedCount}/{method}?path={request}&queryString=";
+      var verifyResponse = await _fixture.Client.GetAsync(requestUri);
+
+      try
+      {
+        verifyResponse.EnsureSuccessStatusCode();
+      }
+      catch (HttpRequestException e)
+      {
+        var errorResponse = verifyResponse.Content.ReadAsStringAsync().Result;
+        throw new HttpRequestException($"{verifyResponse.StatusCode}-{verifyResponse.ReasonPhrase}-{errorResponse}", e);
+      }
+
     }
 
     [Fact]
@@ -67,16 +75,11 @@ namespace MockApiServer.Tests
       const string request = "api/ExpectOneTest";
       const string method = "POST";
       const int expectedCount = 1;
-      var testCase = new TestCase()
+      var testCase = new TestCase(method, request, new
       {
-        RequestPath = request,
-        HttpMethod = method,
-        ExpectedResult = new
-        {
-          Field1 = "field1",
-          Field2 = "field2"
-        }
-      };
+        Field1 = "field1",
+        Field2 = "field2"
+      });
 
       // Act Setup
       var setupResponse = await _fixture.Client.PostAsync(
@@ -125,12 +128,7 @@ namespace MockApiServer.Tests
                                   extensions: {}
                                 }";
 
-      var testCase = new GraphQlTestCase()
-      {
-        OperationName = "ExpectSamples",
-        Query = query,
-        ExpectedResult = JsonConvert.DeserializeObject(result)
-      };
+      var testCase = new GraphQlTestCase(operationName:"ExpectSamples",query:query,expectedResult: JsonConvert.DeserializeObject(result)!);
 
       // Act Setup
       var setupResponse = await _fixture.Client.PostAsync(
@@ -181,12 +179,7 @@ namespace MockApiServer.Tests
                                   extensions: {}
                                 }";
 
-      var testCase = new GraphQlTestCase()
-      {
-        OperationName = "ExpectSamples",
-        Query = query,
-        ExpectedResult = JsonConvert.DeserializeObject(result)
-      };
+      var testCase = new GraphQlTestCase(query, "ExpectSamples", JsonConvert.DeserializeObject(result)!);
 
       // Act Setup
       var setupResponse = await _fixture.Client.PostAsync(

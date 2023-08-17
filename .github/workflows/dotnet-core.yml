@@ -18,7 +18,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.301
+        dotnet-version: 7.0.400
     - name: List current directory
       run: ls -R
       working-directory: ${{env.working-directory}}

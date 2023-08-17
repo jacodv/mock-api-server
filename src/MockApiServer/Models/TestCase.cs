@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using FluentValidation;
 
 namespace MockApiServer.Models
@@ -8,15 +10,32 @@ namespace MockApiServer.Models
     public string HttpMethod { get; set; }
     public string RequestPath { get; set; }
     public dynamic ExpectedResult { get; set; }
-    public string QueryString { get; set; }
+    public string? QueryString { get; set; }
     public bool IsRazorFile { get; set; }
     public bool IsStaticContent { get; set; }
     public bool IsBinary { get; set; }
-    public string StaticContentExtension { get; set; }
+    public string? StaticContentExtension { get; set; }
+    public Dictionary<string, string?> ExpectedHeaders = new();
+
+    public bool SaveAsTestCase => ExpectedHeaders.Any();
+
+    public TestCase(string httpMethod, string requestPath, dynamic expectedResult)
+    {
+      HttpMethod = httpMethod;
+      RequestPath = requestPath;
+      ExpectedResult= expectedResult;
+    }
   }
 
   public class GraphQlTestCase
   {
+    public GraphQlTestCase(string query, string operationName, dynamic expectedResult)
+    {
+      Query = query;
+      OperationName = operationName;
+      ExpectedResult = expectedResult;
+    }
+
     public string Query { get; set; }
     public string OperationName { get; set; }
     public dynamic ExpectedResult { get; set; }
