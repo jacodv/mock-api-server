@@ -48,8 +48,7 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         push: true
-        repository: jdevil/mock-api-server
-        tags: latest
+        tags: jdevil/mock-api-server:latest
         context: ${{env.working-directory}}         
         file: ${{env.working-directory}}/Dockerfile
         
