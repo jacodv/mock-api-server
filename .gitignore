@@ -7,3 +7,4 @@ bin
 /src/Samples/mock-api-app/node_modules
 *.ncrunchsolution
 *.user
+/src/.NCrunch_MockApiServer
