@@ -2,9 +2,9 @@ name: .NET Core
 
 on:
   push:
-    # branches: [ develop ]
+    branches: [ develop ]
   pull_request:
-    # branches: [ develop ]
+    branches: [ develop ]
 
 jobs:
   build:
@@ -45,6 +45,7 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
     
     - name: If-develop, publish docker
+      if: (contains(github.ref, 'develop'))
       uses: docker/build-push-action@v4
       with:
         push: true
