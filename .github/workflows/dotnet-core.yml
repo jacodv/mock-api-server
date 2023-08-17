@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       working-directory: ./src
+      docker-context-directory: ./src/MockApiServer
 
     steps:
     - uses: actions/checkout@v2
@@ -45,6 +46,7 @@ jobs:
       with:
         working-directory: ${{env.working-directory}}        
         dockerfile: ${{env.working-directory}}/MockApiServer/Dockerfile
+        context: ${{env.docker-context-directory}}     
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
         repository: jdevil/mock-api-server
