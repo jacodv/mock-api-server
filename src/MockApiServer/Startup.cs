@@ -27,8 +27,11 @@ namespace MockApiServer
       services.AddControllers();
       services.AddCors();
       services.AddMvcCore()
-        .AddNewtonsoftJson()
-        .AddFluentValidation();
+        .AddNewtonsoftJson();
+
+      services.AddFluentValidationAutoValidation();
+      services.AddFluentValidationClientsideAdapters();
+
       services.AddSingleton<IMockDataService, MockDataService>();
       services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
     }

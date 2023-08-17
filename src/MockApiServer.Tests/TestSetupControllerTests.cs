@@ -73,7 +73,9 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
       var testCase = new TestCase(null,"api/somePath",new { prop = "prop1" });
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
       // Act Assert Post
       var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
@@ -89,7 +91,9 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
       var testCase = new TestCase("POST", null, new { prop = "prop1" });
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
       // Act Assert Post
       var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
@@ -105,7 +109,9 @@ namespace MockApiServer.Tests
     {
       // Arrange
       const string testControllerPath = "/api/TestSetup";
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
       var testCase = new TestCase("POST", "api/somePath", null);
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
       // Act Assert Post
       var invalidResponse = await _fixture.Client.PostAsync(testControllerPath, _fixture.GetHttpContent(testCase));
@@ -423,7 +429,7 @@ namespace MockApiServer.Tests
       await _fixture.ValidateSuccessResponse<T>(response);
       await _validateAllItems(testControllerPath, fileName);
     }
-    private async Task _validateFileDataAndAllItems(string testControllerPath, string getItemUrl, string fileName, byte[] resultsToCompare = null)
+    private async Task _validateFileDataAndAllItems(string testControllerPath, string getItemUrl, string fileName, byte[]? resultsToCompare = null)
     {
       var response = await _fixture.Client.GetAsync(getItemUrl);
 
@@ -438,9 +444,9 @@ namespace MockApiServer.Tests
         await _fixture.Client.GetAsync($"{testControllerPath}");
       var resultAll = await _fixture.ValidateSuccessResponse<string[]>(responseAll);
 
-      var foundItem = resultAll.FirstOrDefault(x => x.Contains(fileName));
-      foundItem.Should().NotBeNullOrEmpty($"{fileName}: But found: {string.Join(",\n", resultAll)}");
-      return foundItem;
+      var foundItem = resultAll!.FirstOrDefault(x => x.Contains(fileName));
+      foundItem.Should().NotBeNullOrEmpty($"{fileName}: But found: {string.Join(",\n", resultAll!)}");
+      return foundItem!;
     }
     #endregion
   }

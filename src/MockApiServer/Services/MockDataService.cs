@@ -22,7 +22,7 @@ namespace MockApiServer.Services
   {
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _env;
-    private readonly MD5CryptoServiceProvider _md5CryptoServiceProvider;
+    private readonly MD5 _md5CryptoServiceProvider;
     private readonly Dictionary<string, dynamic> _expectations;
     private readonly Dictionary<string, int> _expectationRead;
 
@@ -31,7 +31,7 @@ namespace MockApiServer.Services
       _configuration = configuration;
       _env = env;
       _validate();
-      _md5CryptoServiceProvider = new MD5CryptoServiceProvider();
+      _md5CryptoServiceProvider = MD5.Create();
       _expectations = new Dictionary<string, dynamic>();
       _expectationRead = new Dictionary<string, int>();
     }
@@ -46,15 +46,12 @@ namespace MockApiServer.Services
         
       var filePath = _resolveFileNameFromRequest(httpMethod, url, queryString);
 
-      switch (Path.GetExtension(filePath))
+      return Path.GetExtension(filePath) switch
       {
-        case ".razor":
-          return (await _razorResult(filePath, razorModel),null);
-        case ".testcase":
-          return await _getResponseAndTestCase(filePath);
-      }
-
-      return (await File.ReadAllTextAsync(filePath),null);
+        ".razor" => (await _razorResult(filePath, razorModel), null),
+        ".testcase" => await _getResponseAndTestCase(filePath),
+        _ => (await File.ReadAllTextAsync(filePath), null)
+      };
     }
 
     private async Task<(string, TestCase)> _getResponseAndTestCase(string filePath, dynamic? razorModel=null)
@@ -179,7 +176,7 @@ namespace MockApiServer.Services
 
     public async Task<string> ReadGraphQlFile(GraphQlRequest graphQlRequest)
     {
-      var fileName = _getGraphQlFileName(graphQlRequest.operationName, graphQlRequest.query);
+      var fileName = _getGraphQlFileName(graphQlRequest.operationName!, graphQlRequest.query!);
       var expectation = _getExpectation(fileName);
       if (expectation != null)
         return expectation;
@@ -208,13 +205,13 @@ namespace MockApiServer.Services
     {
       return Path.Combine(Environment.CurrentDirectory, _env.WebRootPath, "mockData");
     }
-    private string _getFileNameFromUrl(string httpMethod, string url, string queryString)
+    private string _getFileNameFromUrl(string httpMethod, string url, string? queryString)
     {
       if (url.StartsWith("/"))
-        url = url.Substring(1);
+        url = url[1..];
 
       if (!string.IsNullOrEmpty(queryString) && queryString.StartsWith("?"))
-        queryString = queryString.Substring(1);
+        queryString = queryString[1..];
 
       var queryStringHash = !string.IsNullOrEmpty(queryString) ?
           "_" + BitConverter
@@ -224,7 +221,7 @@ namespace MockApiServer.Services
 
       return $"{httpMethod.ToLower()}_{url.ToLower().Replace('/', '_')}{queryStringHash}.json";
     }
-    private async Task<string> _razorResult(string filePath, RazorModel? razorModel, string? razorContent=null)
+    private static async Task<string> _razorResult(string filePath, RazorModel? razorModel, string? razorContent=null)
     {
       var engine = new RazorLightEngineBuilder()
         .UseProject(new EmbeddedRazorProject(Assembly.GetExecutingAssembly()))
@@ -242,7 +239,7 @@ namespace MockApiServer.Services
       return await engine.CompileRenderStringAsync(templateKey, template, razorModel, (ExpandoObject)null);
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
     }
-    private string _resolveFileNameFromRequest(string httpMethod, string url, string queryString)
+    private string _resolveFileNameFromRequest(string httpMethod, string url, string? queryString)
     {
       var fileName = _getFileNameFromUrl(httpMethod, url, queryString);
       _getFilePath(fileName);
@@ -280,9 +277,11 @@ namespace MockApiServer.Services
       _expectationRead.Remove(fileName);
       return actual;
     }
-    private string _getMinifiedJsonString(string jsonString)
+    private static string _getMinifiedJsonString(string jsonString)
     {
+#pragma warning disable SYSLIB1045
       return Regex.Replace(jsonString, @"\s+", "");
+#pragma warning restore SYSLIB1045
     }
     private void _setupExpectation(dynamic testCase, string fileName)
     {
