@@ -201,10 +201,10 @@ namespace MockApiServer.Tests
     public async Task CRUD_GivenValidStaticHtmlContent_ShouldCreateReadUpdateDelete()
     {
       // Arrange
-      const string requestPath = "api/sample.html";
+      const string requestPath = "api/samplehtml.html";
       var httpMethod = "GET";
       var content = "<p>Static Html Content</p>";
-      var expectedFileName = "get_api_sample.html";
+      var expectedFileName = "get_api_samplehtml.html";
       var testCase = new TestCase(httpMethod, requestPath, content)
       {
         IsStaticContent =true,

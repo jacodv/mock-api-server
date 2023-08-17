@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -51,9 +52,20 @@ namespace MockApiServer.Tests
       testResponse.EnsureSuccessStatusCode();
 
       // Assert
-      var verifyResponse = await _fixture.Client.GetAsync(
-        $"{SetupControllerPath}/Expect/{expectedCount}/{method}?path={request}&queryString=");
-      verifyResponse.EnsureSuccessStatusCode();
+      //"/api/TestSetup/Expect/1/POST?path=api/ExpectOneTest&queryString="
+      var requestUri = $"{SetupControllerPath}/Expect/{expectedCount}/{method}?path={request}&queryString=";
+      var verifyResponse = await _fixture.Client.GetAsync(requestUri);
+
+      try
+      {
+        verifyResponse.EnsureSuccessStatusCode();
+      }
+      catch (HttpRequestException e)
+      {
+        var errorResponse = verifyResponse.Content.ReadAsStringAsync().Result;
+        throw new HttpRequestException($"{verifyResponse.StatusCode}-{verifyResponse.ReasonPhrase}-{errorResponse}", e);
+      }
+
     }
 
     [Fact]

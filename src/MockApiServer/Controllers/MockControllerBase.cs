@@ -20,7 +20,7 @@ namespace MockApiServer.Controllers
       _logger = logger;
       _mockDataService = mockDataService;
     }
-    protected async Task<IActionResult> GetExpectedResult(string httpMethod, string path, string queryString=null, RazorModel razorModel=null)
+    protected async Task<IActionResult> GetExpectedResult(string httpMethod, string path, string? queryString=null, RazorModel? razorModel=null)
     {
       try
       {

@@ -36,7 +36,7 @@ namespace MockApiServer.Controllers
     }
 
     [HttpGet("{method}")]
-    public Task<IActionResult> Get(string method, [FromQuery]string path, [FromQuery] string queryString)
+    public Task<IActionResult> Get(string method, [FromQuery]string path, [FromQuery] string? queryString)
     {
       _logger.LogDebug($"Method: ${method}, Path: {path}");
       return GetExpectedResult(method, path, queryString);
@@ -56,7 +56,7 @@ namespace MockApiServer.Controllers
 
     [Route("{method}")]
     [HttpDelete]
-    public async Task<IActionResult> Delete(string method, [FromQuery]string path, [FromQuery] string queryString)
+    public async Task<IActionResult> Delete(string method, [FromQuery]string path, [FromQuery] string? queryString)
     {
       try
       {
@@ -84,7 +84,7 @@ namespace MockApiServer.Controllers
 
     [Route("Expect/{count}/{method}")]
     [HttpGet]
-    public IActionResult Expect(string method, int count, [FromQuery] string path, [FromQuery] string queryString)
+    public IActionResult Expect(string method, int count, [FromQuery] string path, [FromQuery] string? queryString)
     {
       var actual = _mockDataService.Expect(method, count, path, queryString);
       if (actual == count)

@@ -82,13 +82,14 @@ namespace MockApiServer.Tests
       _testServer = new TestServer(webHostBuilder);
 
       // Add configuration for client
+      const string serverUrl = "http://localhost:3001";
       Client = _testServer.CreateClient();
-      Client.BaseAddress = new Uri("http://localhost:3001");
+      Client.BaseAddress = new Uri(serverUrl);
       Client.DefaultRequestHeaders.Accept.Clear();
       Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
       // ReSharper disable once InconsistentNaming
-      var graphQLEndPoint = new Uri("/graphql",UriKind.Relative);
+      var graphQLEndPoint = new Uri($"{serverUrl}/graphql",UriKind.Absolute);
       GqlClient = new GraphQLHttpClient(
         options:new GraphQLHttpClientOptions(){EndPoint = graphQLEndPoint}, 
         serializer: new NewtonsoftJsonSerializer(),

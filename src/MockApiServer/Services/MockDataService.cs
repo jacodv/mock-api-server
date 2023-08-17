@@ -36,7 +36,7 @@ namespace MockApiServer.Services
       _expectationRead = new Dictionary<string, int>();
     }
 
-    public async Task<(string, TestCase?)> ReadFile(string httpMethod, string url, string? queryString = null, dynamic razorModel=null)
+    public async Task<(string, TestCase?)> ReadFile(string httpMethod, string url, string? queryString = null, dynamic? razorModel=null)
     {
       var fileName = _getFileNameFromUrl(httpMethod, url, queryString);
 
@@ -76,30 +76,45 @@ namespace MockApiServer.Services
 
     public async Task WriteFile(TestCase testCase)
     {
-      var fileName = _getFileNameFromUrl(testCase.HttpMethod, testCase.RequestPath, testCase.QueryString);
-      var filePath = _getFilePath(fileName);
-
-      var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-      if(testCase.SaveAsTestCase)
-        filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{fileNameWithoutExtension}.testcase");
-      else if (testCase.IsRazorFile)
-        filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{fileNameWithoutExtension}.razor");
-      else if (testCase.IsStaticContent)
+      try
       {
-        if(!fileName.EndsWith(testCase.StaticContentExtension))
-          filePath = Path.Combine(Path.GetDirectoryName(filePath), $"{Path.ChangeExtension(fileNameWithoutExtension, testCase.StaticContentExtension)}");
-      }
+        var fileName = _getFileNameFromUrl(testCase.HttpMethod, testCase.RequestPath, testCase.QueryString);
+        var filePath = _getFilePath(fileName);
 
-      var content = testCase.SaveAsTestCase?
-        JsonConvert.SerializeObject(testCase):
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+        if(testCase.SaveAsTestCase)
+          filePath = Path.Combine(Path.GetDirectoryName(filePath)!, $"{fileNameWithoutExtension}.testcase");
+        else if (testCase.IsRazorFile)
+          filePath = Path.Combine(Path.GetDirectoryName(filePath)!, $"{fileNameWithoutExtension}.razor");
+        else if (testCase.IsStaticContent)
+        {
+          if(string.IsNullOrEmpty(testCase.StaticContentExtension))
+            throw new InvalidOperationException("Static content extension is required for static content files");
+          if(!fileName.EndsWith(testCase.StaticContentExtension))
+            filePath = Path.Combine(Path.GetDirectoryName(filePath)!, $"{Path.ChangeExtension(fileNameWithoutExtension, testCase.StaticContentExtension)}");
+        }
+
+        var content = testCase.SaveAsTestCase?
+          JsonConvert.SerializeObject(testCase):
           testCase.IsRazorFile ? 
             testCase.ExpectedResult : // Razor files will post string and not json
             JsonConvert.SerializeObject(testCase.ExpectedResult);
 
-      await File.WriteAllTextAsync(
-        filePath,
-        content,
-        CancellationToken.None);
+        var fileContent = content is string?
+          content.ToString():
+          JsonConvert.SerializeObject(content);
+
+        await File.WriteAllTextAsync(
+          filePath,
+          fileContent,
+          CancellationToken.None);
+      }
+      catch (Exception e)
+      {
+        //TODO:Add Logging
+        Console.WriteLine(e);
+        throw;
+      }
     }
 
     public async Task WriteFile(GraphQlTestCase testCase)
@@ -118,7 +133,7 @@ namespace MockApiServer.Services
         .Select(s => s.Name));
     }
 
-    public Task DeleteFile(string method, string path, string queryString = null)
+    public Task DeleteFile(string method, string path, string? queryString = null)
     {
       var filePath = _resolveFileNameFromRequest(method, path, queryString);
       File.Delete(filePath);
@@ -145,7 +160,7 @@ namespace MockApiServer.Services
       _setupExpectation(testCase, fileName);
     }
 
-    public int Expect(string method, in int count, string path, string queryString = null)
+    public int Expect(string method, in int count, string path, string? queryString = null)
     {
       var fileName = _getFileNameFromUrl(method, path, queryString);
       return _expect(fileName);
@@ -244,7 +259,7 @@ namespace MockApiServer.Services
     {
       if (!_expectations.ContainsKey(fileName))
         return null;
-      _expectationRead[fileName] = _expectationRead[fileName]+1;
+      _expectationRead[fileName] += 1;
       return JsonConvert.SerializeObject(_expectations[fileName].ExpectedResult);
     }
     private string _getGraphQlFileName(string operationName, string query)
