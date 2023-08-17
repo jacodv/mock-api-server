@@ -1,0 +1,1 @@
+{"ExpectedHeaders":{},"HttpMethod":"GET","RequestPath":"/api/forbidden","ExpectedResult":"This request was forbidden","QueryString":null,"IsRazorFile":false,"IsStaticContent":false,"IsBinary":false,"StaticContentExtension":null,"ExpectedStatusCode":403,"SaveAsTestCase":true}
