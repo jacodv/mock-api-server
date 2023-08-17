@@ -5,7 +5,7 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["MockApiServer/MockApiServer.csproj", "MockApiServer/"]
 RUN dotnet restore "MockApiServer/MockApiServer.csproj"
