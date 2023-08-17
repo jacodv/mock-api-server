@@ -38,7 +38,7 @@ jobs:
         echo ${{github.ref}}  
     
     - name: If-develop, publish docker
-      if: (contains(github.ref, 'develop'))
+      # if: (contains(github.ref, 'develop'))
       uses: docker/build-push-action@v1
       with:
         working-directory: ${{env.working-directory}}        
