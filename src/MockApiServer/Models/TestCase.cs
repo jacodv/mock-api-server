@@ -16,8 +16,10 @@ namespace MockApiServer.Models
     public bool IsBinary { get; set; }
     public string? StaticContentExtension { get; set; }
     public Dictionary<string, string?> ExpectedHeaders = new();
+    public int ExpectedStatusCode { get; set; }
 
-    public bool SaveAsTestCase => ExpectedHeaders.Any();
+    public bool SaveAsTestCase => ExpectedHeaders.Any() || 
+                                  ExpectedStatusCode!=0;
 
     public TestCase(string httpMethod, string requestPath, dynamic expectedResult)
     {

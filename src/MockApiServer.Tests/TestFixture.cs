@@ -155,6 +155,11 @@ namespace MockApiServer.Tests
         "application/json");
     }
 
+    public void LogMessage(string message, params object[] args)
+    {
+      _testOutputHelper!.WriteLine(message, args);
+    }
+
     public async Task<dynamic> ExecuteGraphQlQuery(string query, string operationName)
     {
       var graphQlRequest = new GraphQLRequest(query, null, operationName);

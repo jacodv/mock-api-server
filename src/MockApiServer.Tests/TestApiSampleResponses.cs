@@ -146,6 +146,29 @@ namespace MockApiServer.Tests
       _fixture.Client.DefaultRequestHeaders.Remove(headerName);
       await _fixture.ValidateSuccessResponse<SampleModel>(response);
     }
+
+    [Fact]
+    public async Task Get_ApiRequest_WithExpectedStatusCode_ShouldReturnExpectedStatusCode()
+    {
+      // Arrange
+      const string request = "/api/forbidden";
+      var testCase = new TestCase("GET", request, "This request was forbidden")
+      {
+        ExpectedStatusCode = 403
+      };
+
+      var jsonContent = JsonConvert.SerializeObject(testCase);
+      await _fixture.Client.PostAsync("/api/testsetup", new StringContent(jsonContent, MediaTypeHeaderValue.Parse("application/json")));
+
+      // Act
+      var response = await _fixture.Client.GetAsync(request);
+
+      // Assert
+      var content = await response.Content.ReadAsStringAsync();
+      _fixture.LogMessage($"{response.StatusCode}-{response.ReasonPhrase}. {content}");
+      response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
   }
 
 }

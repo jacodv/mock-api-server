@@ -26,9 +26,12 @@ namespace MockApiServer.Controllers
       {
         var (value, testCase) = await _mockDataService.ReadFile(httpMethod, path, queryString, razorModel);
 
-        if (testCase == null || !testCase.ExpectedHeaders.Any())
+        if (testCase == null || !testCase.SaveAsTestCase)
           return new OkObjectResult(JsonConvert.DeserializeObject(value: value));
-        
+
+        if (testCase.ExpectedStatusCode != 0)
+          return StatusCode(testCase.ExpectedStatusCode, value);
+
         var requestHeaderNames = Request.Headers.Keys;
 
         foreach (var testCaseExpectedHeader in testCase.ExpectedHeaders)
